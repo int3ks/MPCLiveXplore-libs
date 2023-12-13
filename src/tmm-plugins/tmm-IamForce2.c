@@ -345,16 +345,27 @@ int padscolorcacheindexSTPSQ[16] = { 12,13,14,15, 8, 9,10,11, 4, 5, 6, 7, 0, 1, 
 
 static void MPCRefresCurrentQuadran() {
     int padcolorindex = 0;
-    //tklog_debug("start MPCRefresCurrentQuadran\n");
+    tklog_debug("start MPCRefresCurrentQuadran\n");
     for (uint8_t padnumber = 0; padnumber < 16; padnumber++) {
-        if (currentPadMode == FORCE_BT_STEP_SEQ && (MPCPadQuadran == MPC_BANK_C || MPCPadQuadran == MPC_BANK_D || MPCPadQuadran == MPC_BANK_G || MPCPadQuadran == MPC_BANK_H)) {
-            padcolorindex = padscolorcacheindexSTPSQ[padnumber];
-            switch (MPCPadQuadran) {
+        if (currentPadMode == FORCE_BT_STEP_SEQ){
+            if (MPCPadQuadran == MPC_BANK_C || MPCPadQuadran == MPC_BANK_D || MPCPadQuadran == MPC_BANK_G || MPCPadQuadran == MPC_BANK_H) {
+                padcolorindex = padscolorcacheindexSTPSQ[padnumber];
+                switch (MPCPadQuadran) {
                 case MPC_BANK_D: padcolorindex += 16; break;
                 case MPC_BANK_G: padcolorindex += 32; break;
                 case MPC_BANK_H: padcolorindex += 48; break;
+                }
+                tklog_debug("MPCRefresCurrentQuadran STEPS padcolorindex: %d\n", padcolorindex);
+
             }
-            //tklog_debug("MPCRefresCurrentQuadran STEPS padcolorindex: %d\n", padcolorindex);
+            else if(MPCPadQuadran == MPC_BANK_A || MPCPadQuadran == MPC_BANK_B) {
+                padcolorindex = padscolorcacheindexLAUNC[padnumber];
+                switch (MPCPadQuadran) {
+                //case MPC_BANK_A:padcolorindex -= 0; break;
+                case MPC_BANK_B:padcolorindex += 4; break;
+                }
+                tklog_debug("MPCRefresCurrentQuadran LAUNCH padcolorindex: %d\n", padcolorindex);
+            }
         }
         else if (currentPadMode == FORCE_BT_NOTE) {
             padcolorindex = padscolorcacheindexNOTES[padnumber];
@@ -363,25 +374,25 @@ static void MPCRefresCurrentQuadran() {
                 case MPC_BANK_B:padcolorindex += 32; break;
                 case MPC_BANK_A:padcolorindex += 48; break;
             }
-            //tklog_debug("MPCRefresCurrentQuadran NOTE padcolorindex: %d\n", padcolorindex);
+            tklog_debug("MPCRefresCurrentQuadran NOTE padcolorindex: %d\n", padcolorindex);
         }
-        else {
+        else if (currentPadMode == FORCE_BT_LAUNCH) {
             padcolorindex = padscolorcacheindexLAUNC[padnumber];
             switch (MPCPadQuadran) {
                 case MPC_BANK_A:padcolorindex -= 32; break;
                 case MPC_BANK_B:padcolorindex -= 28; break;
                 case MPC_BANK_D:padcolorindex += 4; break;
             }
-            //tklog_debug("MPCRefresCurrentQuadran LAUNCH padcolorindex: %d\n",padcolorindex);
+            tklog_debug("MPCRefresCurrentQuadran LAUNCH padcolorindex: %d\n",padcolorindex);
         }
         DeviceSetPadColorRGB(MPC_Id, padnumber, Force_PadColorsCache[padcolorindex].c.r, Force_PadColorsCache[padcolorindex].c.g, Force_PadColorsCache[padcolorindex].c.b);
     }
-    // tklog_debug("finish MPCRefresCurrentQuadran\n");
+    tklog_debug("finish MPCRefresCurrentQuadran\n");
 }
 
 
 
-#define _LIVE2_
+//#define _LIVE2_
 
 static mapping buttonmapping[] = {
     {FORCE_BT_ENCODER , MPC_BT_ENCODER},
@@ -439,7 +450,7 @@ static mapping getForceMappingValue(uint8_t mpcValue) {
 
 // To compile define one of the following preprocesseur variables :
 // NONE is the default.
-#define _LPMK3_
+//#define _LPMK3_
 #if defined _APCKEY25MK2_
    #warning IamForce driver id : APCKEY25MK2
    #include "Iamforce-APCKEY25MK2.h"
@@ -1020,7 +1031,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
         // to send specific CC/channel 16 to the  port name = "TKGL_(your controller name)" to trig those commands.
 
     case FROM_MPC_EXTCTRL:
-        //tklog_debug("Midi Event received from MPC EXCTRL\n");
+        tklog_debug("Midi Event received from MPC EXCTRL\n");
         if (ev->type == SND_SEQ_EVENT_CONTROLLER) {
 
             // Is it one of our IAMFORCE macros on midi channel 16 ?
