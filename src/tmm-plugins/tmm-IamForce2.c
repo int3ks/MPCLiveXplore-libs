@@ -69,15 +69,15 @@ IAMFORCE PLUGIN -- Force Emulation on MPC
 //#define MPC_QUADRAN_3 32
 //#define MPC_QUADRAN_4 36
 
-#define MPC_BANK_A 32
-#define MPC_BANK_B 36
-#define MPC_BANK_C 0
+#define MPC_BANK_A 1
+#define MPC_BANK_B 2
+#define MPC_BANK_C 3
 #define MPC_BANK_D 4
 
-#define MPC_BANK_E 40
-#define MPC_BANK_F 44
-#define MPC_BANK_G 50
-#define MPC_BANK_H 54
+#define MPC_BANK_E 5
+#define MPC_BANK_F 6
+#define MPC_BANK_G 7
+#define MPC_BANK_H 8
 
 
 // IAMFORCE MACRO CC# on channel 16
@@ -143,6 +143,9 @@ static bool ShiftMode=false;
 static bool EraseMode = false;
 
 static bool LaunchMode = false;
+
+static bool MixPressed = false;
+
 
 // Shift mode within controller
 static bool CtrlShiftMode = false;
@@ -260,6 +263,20 @@ static uint8_t mapForceNote_ForceStepsMapping(uint8_t mpcPad) {
     return 0;
 }
 
+static mapping mpcPadToMute[] = {
+ {FORCE_BT_MUTE_PAD5,40}, {FORCE_BT_MUTE_PAD6,38}, {FORCE_BT_MUTE_PAD7,46}, {FORCE_BT_MUTE_PAD8,44},
+ {FORCE_BT_MUTE_PAD1,37}, {FORCE_BT_MUTE_PAD2,36}, {FORCE_BT_MUTE_PAD3,42}, {FORCE_BT_MUTE_PAD4,82}
+};
+static uint8_t mapPadToMutemapping(uint8_t mpcPad) {
+    size_t size = sizeof(mpcPadToMute) / sizeof(mpcPadToMute[0]);
+    for (int i = 0; i < size; i++) {
+        if (mpcPadToMute[i].mpc == mpcPad) {
+            return mpcPadToMute[i].force;
+        }
+    }
+    return 0;
+}
+
 static mapping mpcPadToTrack[] = {
     {FORCE_BT_COLUMN_PAD5,40}, {FORCE_BT_COLUMN_PAD6,38}, {FORCE_BT_COLUMN_PAD7,46}, {FORCE_BT_COLUMN_PAD8,44},
     {FORCE_BT_COLUMN_PAD1,37}, {FORCE_BT_COLUMN_PAD2,36}, {FORCE_BT_COLUMN_PAD3,42}, {FORCE_BT_COLUMN_PAD4,82}
@@ -345,7 +362,7 @@ int padscolorcacheindexSTPSQ[16] = { 12,13,14,15, 8, 9,10,11, 4, 5, 6, 7, 0, 1, 
 
 static void MPCRefresCurrentQuadran() {
     int padcolorindex = 0;
-    tklog_debug("start MPCRefresCurrentQuadran\n");
+   // tklog_debug("start MPCRefresCurrentQuadran\n");
     for (uint8_t padnumber = 0; padnumber < 16; padnumber++) {
         if (currentPadMode == FORCE_BT_STEP_SEQ){
             if (MPCPadQuadran == MPC_BANK_C || MPCPadQuadran == MPC_BANK_D || MPCPadQuadran == MPC_BANK_G || MPCPadQuadran == MPC_BANK_H) {
@@ -355,7 +372,7 @@ static void MPCRefresCurrentQuadran() {
                 case MPC_BANK_G: padcolorindex += 32; break;
                 case MPC_BANK_H: padcolorindex += 48; break;
                 }
-                tklog_debug("MPCRefresCurrentQuadran STEPS padcolorindex: %d\n", padcolorindex);
+               // tklog_debug("MPCRefresCurrentQuadran STEPS padcolorindex: %d\n", padcolorindex);
 
             }
             else if(MPCPadQuadran == MPC_BANK_A || MPCPadQuadran == MPC_BANK_B) {
@@ -364,7 +381,7 @@ static void MPCRefresCurrentQuadran() {
                 //case MPC_BANK_A:padcolorindex -= 0; break;
                 case MPC_BANK_B:padcolorindex += 4; break;
                 }
-                tklog_debug("MPCRefresCurrentQuadran LAUNCH padcolorindex: %d\n", padcolorindex);
+              //  tklog_debug("MPCRefresCurrentQuadran LAUNCH padcolorindex: %d\n", padcolorindex);
             }
         }
         else if (currentPadMode == FORCE_BT_NOTE) {
@@ -374,7 +391,7 @@ static void MPCRefresCurrentQuadran() {
                 case MPC_BANK_B:padcolorindex += 32; break;
                 case MPC_BANK_A:padcolorindex += 48; break;
             }
-            tklog_debug("MPCRefresCurrentQuadran NOTE padcolorindex: %d\n", padcolorindex);
+           // tklog_debug("MPCRefresCurrentQuadran NOTE padcolorindex: %d\n", padcolorindex);
         }
         else if (currentPadMode == FORCE_BT_LAUNCH) {
             padcolorindex = padscolorcacheindexLAUNC[padnumber];
@@ -383,11 +400,11 @@ static void MPCRefresCurrentQuadran() {
                 case MPC_BANK_B:padcolorindex -= 28; break;
                 case MPC_BANK_D:padcolorindex += 4; break;
             }
-            tklog_debug("MPCRefresCurrentQuadran LAUNCH padcolorindex: %d\n",padcolorindex);
+           // tklog_debug("MPCRefresCurrentQuadran LAUNCH padcolorindex: %d\n",padcolorindex);
         }
         DeviceSetPadColorRGB(MPC_Id, padnumber, Force_PadColorsCache[padcolorindex].c.r, Force_PadColorsCache[padcolorindex].c.g, Force_PadColorsCache[padcolorindex].c.b);
     }
-    tklog_debug("finish MPCRefresCurrentQuadran\n");
+   // tklog_debug("finish MPCRefresCurrentQuadran\n");
 }
 
 
@@ -514,8 +531,7 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
       ev->data.control.param = MPC_BT_BANK_B;
       SendMidiEvent(ev);
 
-      ev->data.control.param = MPC_BT_BANK_C;
-      SendMidiEvent(ev);
+     
 
       ev->data.control.param = MPC_BT_BANK_D;
       SendMidiEvent(ev);
@@ -532,6 +548,9 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
       ev->data.control.param = MPC_BT_TC;
       SendMidiEvent(ev);
 
+      ev->data.control.param = MPC_BT_BANK_C;
+      ev->data.control.value = MPC_BUTTON_COLOR_RED_HI;
+      SendMidiEvent(ev);
 
       return;
   }
@@ -599,6 +618,12 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
     int mapVal = -1 ;
     bool shiftReleaseBefore = false;
     
+    if (ev->data.note.note == MPC_BT_CHANNEL_MIXER) {
+
+        MixPressed = (ev->data.note.velocity == 0x7F);
+        tklog_debug("mixPressed %d\n", MixPressed);
+    }
+
     if (ev->data.note.note == MPC_BT_ERASE) {
         EraseMode = (ev->data.note.velocity == 0x7F);
     }
@@ -989,11 +1014,22 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                
                 uint8_t ForcePadNote = ev->data.note.note;
                 if (EraseMode) {
-
-                    uint8_t track = mapPadToTrackmapping(ev->data.note.note);
-
-                    if (track >0) {
-                        SendDeviceKeyPress(track);
+                    if (ev->data.note.velocity == 0x7F) {
+                        uint8_t track = mapPadToTrackmapping(ev->data.note.note);
+                        if (track > 0) {
+                            //tklog_debug("PAD track delete received %d vole: %d\n", track, ev->data.note.velocity);
+                            SendDeviceKeyPress(track);
+                        }
+                    }
+                    return false;
+                }
+                if (MixPressed) {
+                    if (ev->data.note.velocity == 0x7F) {
+                        uint8_t track = mapPadToMutemapping(ev->data.note.note);
+                        if (track > 0) {
+                            //tklog_debug("PAD rec arm received %d vole: %d\n", track, ev->data.note.velocity);
+                            SendDeviceKeyPress(track);
+                        }
                     }
                     return false;
                 }

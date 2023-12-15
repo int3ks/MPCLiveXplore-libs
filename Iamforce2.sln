@@ -42,6 +42,34 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "deprecated", "deprecated", 
 		src\deprecated\tkgl_mpcmapper.ini = src\deprecated\tkgl_mpcmapper.ini
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "bin", "bin", "{788CA4F2-B36B-42D3-8B61-7F7FD4DF3888}"
+	ProjectSection(SolutionItems) = preProject
+		bin\tmm-IamForce-APCKEY25MK2-LIVE2.so = bin\tmm-IamForce-APCKEY25MK2-LIVE2.so
+		bin\tmm-IamForce-APCKEY25MK2-ONE.so = bin\tmm-IamForce-APCKEY25MK2-ONE.so
+		bin\tmm-IamForce-APCKEY25MK2.so = bin\tmm-IamForce-APCKEY25MK2.so
+		bin\tmm-IamForce-APCMINIMK2-LIVE2.so = bin\tmm-IamForce-APCMINIMK2-LIVE2.so
+		bin\tmm-IamForce-APCMINIMK2-ONE.so = bin\tmm-IamForce-APCMINIMK2-ONE.so
+		bin\tmm-IamForce-APCMINIMK2.so = bin\tmm-IamForce-APCMINIMK2.so
+		bin\tmm-IamForce-KIKPADMK3-LIVE2.so = bin\tmm-IamForce-KIKPADMK3-LIVE2.so
+		bin\tmm-IamForce-KIKPADMK3-ONE.so = bin\tmm-IamForce-KIKPADMK3-ONE.so
+		bin\tmm-IamForce-KIKPADMK3.so = bin\tmm-IamForce-KIKPADMK3.so
+		bin\tmm-IamForce-LPMK2-LIVE2.so = bin\tmm-IamForce-LPMK2-LIVE2.so
+		bin\tmm-IamForce-LPMK2-ONE.so = bin\tmm-IamForce-LPMK2-ONE.so
+		bin\tmm-IamForce-LPMK2.so = bin\tmm-IamForce-LPMK2.so
+		bin\tmm-IamForce-LPMK3-LIVE2.so = bin\tmm-IamForce-LPMK3-LIVE2.so
+		bin\tmm-IamForce-LPMK3-ONE.so = bin\tmm-IamForce-LPMK3-ONE.so
+		bin\tmm-IamForce-LPMK3.so = bin\tmm-IamForce-LPMK3.so
+		bin\tmm-IamForce-LPPROMK3-LIVE2.so = bin\tmm-IamForce-LPPROMK3-LIVE2.so
+		bin\tmm-IamForce-LPPROMK3-ONE.so = bin\tmm-IamForce-LPPROMK3-ONE.so
+		bin\tmm-IamForce-LPPROMK3.so = bin\tmm-IamForce-LPPROMK3.so
+		bin\tmm-IamForce-LPX-LIVE2.so = bin\tmm-IamForce-LPX-LIVE2.so
+		bin\tmm-IamForce-LPX-ONE.so = bin\tmm-IamForce-LPX-ONE.so
+		bin\tmm-IamForce-LPX.so = bin\tmm-IamForce-LPX.so
+		bin\tmm-IamForce-NONE-LIVE2.so = bin\tmm-IamForce-NONE-LIVE2.so
+		bin\tmm-IamForce-NONE-ONE.so = bin\tmm-IamForce-NONE-ONE.so
+		bin\tmm-IamForce-NONE.so = bin\tmm-IamForce-NONE.so
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,6 +87,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{626B5B61-93FB-454A-968B-67A29BC5CAFC} = {18A7FE29-87FE-4B45-8521-72FC4076B0A2}
 		{A0494109-0F14-49A1-8418-42434F45BB40} = {18A7FE29-87FE-4B45-8521-72FC4076B0A2}
+		{788CA4F2-B36B-42D3-8B61-7F7FD4DF3888} = {18A7FE29-87FE-4B45-8521-72FC4076B0A2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {876C4E24-9AD0-4858-A708-4C738913A702}
