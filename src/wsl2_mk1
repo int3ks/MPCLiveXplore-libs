@@ -11,6 +11,6 @@
 
 mkdir -p ../bin
 
-arm-linux-gnueabihf-gcc  ./tmm-plugins/tmm-IamForce2.c -o ../bin/tmm-IamForce-LPMK3-LIVE2.so -shared -fPIC -I/usr/include/alsa -I./ -ldl -D_LPMK3_ -D_LIVE2_
+arm-linux-gnueabihf-gcc  ./tmm-plugins/tmm-IamForce2.c -o ../bin/tmm-IamForce-$1-$2.so -shared -fPIC -I/usr/include/alsa -I./ -ldl -D_$1_ -D_$2_
 
 

@@ -48,6 +48,7 @@ IAMFORCE PLUGIN -- Force Emulation on MPC
 #include <stdarg.h>
 #include <alsa/asoundlib.h>
 #include <dlfcn.h>
+#include <time.h>
 
 // midimapper defines -----------------------------------------------------------
 
@@ -142,7 +143,7 @@ static bool ShiftMode=false;
 
 static bool EraseMode = false;
 
-static bool LaunchMode = false;
+//static bool LaunchMode = false;
 
 static bool MixPressed = false;
 
@@ -159,6 +160,7 @@ static int CurrentSoloMode = FORCE_SM_SOLO;
 
 // CurrentPad mode Note or Stepseq
 static int currentPadMode = 0;
+static int MatrixActive = 0;
 
 // Solo mode buttons map : same order as ForceSoloModes enum
 static const uint8_t SoloModeButtonMap [] = { FORCE_BT_MUTE,FORCE_BT_SOLO, FORCE_BT_REC_ARM, FORCE_BT_CLIP_STOP };
@@ -264,8 +266,8 @@ static uint8_t mapForceNote_ForceStepsMapping(uint8_t mpcPad) {
 }
 
 static mapping mpcPadToMute[] = {
- {FORCE_BT_MUTE_PAD5,40}, {FORCE_BT_MUTE_PAD6,38}, {FORCE_BT_MUTE_PAD7,46}, {FORCE_BT_MUTE_PAD8,44},
- {FORCE_BT_MUTE_PAD1,37}, {FORCE_BT_MUTE_PAD2,36}, {FORCE_BT_MUTE_PAD3,42}, {FORCE_BT_MUTE_PAD4,82}
+    {FORCE_BT_MUTE_PAD5,40}, {FORCE_BT_MUTE_PAD6,38}, {FORCE_BT_MUTE_PAD7,46}, {FORCE_BT_MUTE_PAD8,44},
+    {FORCE_BT_MUTE_PAD1,37}, {FORCE_BT_MUTE_PAD2,36}, {FORCE_BT_MUTE_PAD3,42}, {FORCE_BT_MUTE_PAD4,82}
 };
 static uint8_t mapPadToMutemapping(uint8_t mpcPad) {
     size_t size = sizeof(mpcPadToMute) / sizeof(mpcPadToMute[0]);
@@ -276,6 +278,23 @@ static uint8_t mapPadToMutemapping(uint8_t mpcPad) {
     }
     return 0;
 }
+
+
+static mapping mpcPadToLaunch[] = {
+    {FORCE_BT_LAUNCH_5,40}, {FORCE_BT_LAUNCH_6,38}, {FORCE_BT_LAUNCH_7,46}, {FORCE_BT_LAUNCH_8,44},
+    {FORCE_BT_LAUNCH_1,37}, {FORCE_BT_LAUNCH_2,36}, {FORCE_BT_LAUNCH_3,42}, {FORCE_BT_LAUNCH_4,82}
+};
+static uint8_t mapPadToLaunchmapping(uint8_t mpcPad) {
+    size_t size = sizeof(mpcPadToLaunch) / sizeof(mpcPadToLaunch[0]);
+    for (int i = 0; i < size; i++) {
+        if (mpcPadToLaunch[i].mpc == mpcPad) {
+            return mpcPadToLaunch[i].force;
+        }
+    }
+    return 0;
+}
+
+
 
 static mapping mpcPadToTrack[] = {
     {FORCE_BT_COLUMN_PAD5,40}, {FORCE_BT_COLUMN_PAD6,38}, {FORCE_BT_COLUMN_PAD7,46}, {FORCE_BT_COLUMN_PAD8,44},
@@ -512,6 +531,16 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
       currentPadMode = ev->data.control.param;
   }
 
+  if (ev->data.control.param == FORCE_BT_MATRIX) {
+      if (ev->data.control.value == 3) {
+          MatrixActive = 1;
+      }
+      else {
+          MatrixActive = 0;
+      }
+      tklog_debug("MatrixActive %d\n", MatrixActive);
+  }
+
   bool sent = false;
   size_t size = sizeof(buttonmapping) / sizeof(buttonmapping[0]);
   for (int i = 0; i < size; i++) {
@@ -628,9 +657,10 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
         EraseMode = (ev->data.note.velocity == 0x7F);
     }
 
-    if (ev->data.note.note == MPC_BT_PLAY_START) {
+  /*  if (ev->data.note.note == MPC_BT_PLAY_START) {
         LaunchMode = (ev->data.note.velocity == 0x7F);
-    }
+        tklog_debug("LaunchMode %d\n", LaunchMode);
+    }*/
 
     if ( ev->data.note.note == MPC_BT_SHIFT ) {
         ShiftMode = ( ev->data.note.velocity == 0x7F ) ;
@@ -876,6 +906,8 @@ void MidiMapperSetup() {
 ///////////////////////////////////////////////////////////////////////////////
 // Midi mapper events processing
 ///////////////////////////////////////////////////////////////////////////////
+
+static int trackPadPressedTime = 0;
 bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t size ) {
 
     switch (sender) {
@@ -919,6 +951,11 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                     Force_PadColorsCache[padF].c.r = buffer[i++];
                     Force_PadColorsCache[padF].c.g = buffer[i++];
                     Force_PadColorsCache[padF].c.b = buffer[i++];
+                    if (Force_PadColorsCache[padF].c.g >= 64 || Force_PadColorsCache[padF].c.r >= 64 || Force_PadColorsCache[padF].c.b >= 64) {
+                        tklog_debug("PAD COLOR padF=%d greenvalue=%d \n", padF, Force_PadColorsCache[padF].c.g);
+
+
+                    }
                     //if (Force_PadColorsCache[padF].c.g == 127) {
                      //   tklog_debug("PAD COLOR padF=%d greenvalue=%d \n", padF,Force_PadColorsCache[padF].c.g);
                     //}
@@ -1010,11 +1047,43 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
 
             // Mpc Pads on channel 9
             if (ev->data.note.channel == 9) {
+                //tklog_debug("PAD track received currentPadMode %d  shiftmode %d\n", currentPadMode, ShiftMode);
+                if ((MatrixActive || currentPadMode == FORCE_BT_LAUNCH) && ShiftMode) {
+                    if (ev->data.note.velocity > 0) {
+                        if (trackPadPressedTime > 0) {
+                            int duration = time(NULL) - trackPadPressedTime;
+                            if (duration == 0) {
+                                // tklog_debug("track pad duration= %d\n", duration);
+                                return false;
+                            }
+                            else {
+                                trackPadPressedTime = 0;
+                            }
+                        }
+                        uint8_t track = mapPadToLaunchmapping(ev->data.note.note);
+                        if (track > 0) {
+                          //  tklog_debug("PAD launch received %d velocity: %d\n", track, ev->data.note.velocity);
+                            SendDeviceKeyPress(track);
+                            trackPadPressedTime = time(NULL);
+                        }
+                    }
+                    return false;
+                }
 
                
-                uint8_t ForcePadNote = ev->data.note.note;
+              
                 if (EraseMode) {
-                    if (ev->data.note.velocity == 0x7F) {
+                    if (ev->data.note.velocity > 0) {
+                        if (trackPadPressedTime > 0) {
+                            int duration = time(NULL) - trackPadPressedTime;
+                            if (duration == 0) {
+                                // tklog_debug("track pad duration= %d\n", duration);
+                                return false;
+                            }
+                            else {
+                                trackPadPressedTime = 0;
+                            }
+                        }
                         uint8_t track = mapPadToTrackmapping(ev->data.note.note);
                         if (track > 0) {
                             //tklog_debug("PAD track delete received %d vole: %d\n", track, ev->data.note.velocity);
@@ -1024,20 +1093,32 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                     return false;
                 }
                 if (MixPressed) {
-                    if (ev->data.note.velocity == 0x7F) {
+                    
+                    if (ev->data.note.velocity > 0) {
+                        if (trackPadPressedTime > 0) {
+                            int duration = time(NULL) - trackPadPressedTime;
+                            if (duration == 0) {
+                               // tklog_debug("track pad duration= %d\n", duration);
+                                return false;
+                            }
+                            else {
+                                trackPadPressedTime = 0;
+                            }
+                        }
                         uint8_t track = mapPadToMutemapping(ev->data.note.note);
                         if (track > 0) {
-                            //tklog_debug("PAD rec arm received %d vole: %d\n", track, ev->data.note.velocity);
+                           // tklog_debug("PAD rec arm received %d velocity: %d\n", track, ev->data.note.velocity);
                             SendDeviceKeyPress(track);
+                            trackPadPressedTime = time(NULL);
                         }
                     }
                     return false;
                 }
 
-
+                uint8_t ForcePadNote = ev->data.note.note;
                 ForcePadNote = getForcePadIndex(ev->data.note.note);
                 if (ev->data.note.velocity > 0) {
-               //     tklog_debug("PAD Event received as usual padmode %d -> orgnote= %d forcenote %d\n",currentPadMode, ev->data.note.note, ForcePadNote);
+                    tklog_debug("PAD Event received as usual padmode %d -> orgnote= %d forcenote %d\n",currentPadMode, ev->data.note.note, ForcePadNote);
                 }
 
                 ev->data.note.note = ForcePadNote;

@@ -1,15 +1,28 @@
 
 
 using Microsoft.Extensions.Configuration;
-using Renci.SshNet;
-using Renci.SshNet.Common;
+using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
+
 
 
 namespace BuildNDeploy {
     public partial class Form1 : Form {
 
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr WindowHandle);
+
+        private const int SW_NORMAL = 1;
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
         private readonly IConfiguration config;
+        Process Powershell = null;
+        static bool gccChecked = false;
+        static Process logprocess;
+
         public Form1() {
 
             InitializeComponent();
@@ -20,11 +33,10 @@ namespace BuildNDeploy {
         }
 
         void log(string info) {
-            this.Invoke((Func<string, bool>)DoGuiAccess, info);
+            Invoke(DoGuiAccess, info);
         }
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-
+        [DllImport("user32.dll")]
         public static extern bool LockWindowUpdate(IntPtr hWndLock);
 
         bool DoGuiAccess(string info) {
@@ -35,152 +47,138 @@ namespace BuildNDeploy {
             logtext.ScrollToCaret();
             LockWindowUpdate(IntPtr.Zero);
             return true;
-
         }
-        public void BashC(string cmd) {
-            log($"start bashCommand: {cmd}");
-            var escapedArgs = cmd.Replace("\"", "\\\"").Replace("\r\n", "\n");
-            try {
-                var process = new Process {
-                    StartInfo = new ProcessStartInfo {
-                        FileName = "bash",
-                        Arguments = $"-c \"{escapedArgs}\"",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    },
-                    EnableRaisingEvents = true
-                };
-                process.OutputDataReceived += (sender, e) => { log(e.Data + ""); };
-                process.ErrorDataReceived += (sender, e) => { log(e.Data + ""); };
 
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
+        private void StartPowerShell() {
+            Powershell = new Process {
+                StartInfo = new ProcessStartInfo {
+                    FileName = "powershell.exe",
+                    UseShellExecute = false,
+                    RedirectStandardInput = true,
+                    CreateNoWindow = false,
+                },
+                EnableRaisingEvents = true
+            };
+            Powershell.Start();
+            Powershell.Exited += (sender, e) => {  Powershell = null; };
+            Powershell.ExecuteShellCmd("Function prompt { \"PS > \" } ; cls", 100);
+        }
 
-                process.Exited += (sender, e) => { log("ready"); };
-
-            } catch (Exception e) {
-                log($"Command {cmd} failed {e}");
+        private void EnsurePowershell() {
+            if (Powershell == null) {
+                StartPowerShell();
             }
+            ShowWindow(Powershell.MainWindowHandle, SW_NORMAL);
+            SetForegroundWindow(Powershell.MainWindowHandle);
+        }
 
+       
+        private void StartBash() {
+            Powershell.ExecuteBashCmd("Bash");
+            if (!gccChecked) {
+                Powershell.ExecuteBashCmd("sudo apt-get install gcc-arm-linux-gnueabihf -y");
+                Powershell.ExecuteBashCmd("sudo apt-get install libasound2-dev -y");
+                gccChecked = true;
+            }
         }
 
         private void runbuild_Click(object sender, EventArgs e) {
             var src = config["Iamforce2_src_path_wsl"];
+            EnsurePowershell();
+            StartBash();
+            src = src.Replace("\r\n", "\n");
 
-            BashC(@$"
-                cd {src}
-                ./wsl2_mk
-            ");
+            Powershell.ExecuteBashCmd($"cd {src}");
+            Powershell.ExecuteBashCmd("./wsl2_mk");
+            Powershell.ExecuteBashCmd($"echo build done '{DateTime.Now}' ");
 
-
+            Powershell.ExecuteBashCmd("exit");
+            return;
         }
 
-        private void button3_Click(object sender, EventArgs e) {
+       
+
+
+        private void runTestBuild_Click(object sender, EventArgs e) {
+
             var src = config["Iamforce2_src_path_wsl"];
 
-            BashC(@$"
-                cd {src}
-                ./wsl2_mk1
-            ");
-        }
-        private void button2_Click(object sender, EventArgs e) {
-            SshClient sshclient = new SshClient(config["mpc_ip"], "root");
-            sshclient.Connect();
-            SshCommand sc = sshclient.CreateCommand("systemctl stop inmusic-mpc; systemctl status inmusic-mpc");
-            sc.Execute();
-            log(sc.Result.Replace("\n", "\r\n") + "\r\n");
+            EnsurePowershell();
+            StartBash();
+            src = src.Replace("\r\n", "\n");
 
-            //var bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*.so");
-            var bins = new[] { config["Iamforce2_bin_path_windows"] + "\\" + "tmm-IamForce-LPMK3-LIVE2.so" };
+            Powershell.ExecuteBashCmd($"cd {src}");
+            Powershell.ExecuteBashCmd($"./wsl2_mk1 {config["MyPad"]} {config["MyMpc"]} ");
+            Powershell.ExecuteBashCmd($"echo build done '{DateTime.Now}' ");
+            Powershell.ExecuteBashCmd("exit");
+            return;
+        }
+
+        private void copyTestBinToMpc_click(object sender, EventArgs e) {
+
+            EnsurePowershell();
+
+            Powershell.ExecuteShellCmd($" ssh root@{config["mpc_ip"]} systemctl stop inmusic-mpc");
+
+            Thread.Sleep(100); //tmm-IamForce-LPMK3-LIVE2
+            var bins = new[] { $" {config["Iamforce2_bin_path_windows"]}\\tmm-IamForce-{config["MyPad"]}-{config["MyMpc"]}.so" };
+            CopyBins(bins);
+
+            Powershell.ExecuteShellCmd($" ssh root@{config["mpc_ip"]} systemctl start inmusic-mpc");
+            Thread.Sleep(100);
+            return;
+
+
+        }
+
+        private void CopyBins(IEnumerable<string> bins) {
             foreach (var bin in bins) {
                 log(bin.ToString());
 
                 var filename = Path.GetFileName(bin);
                 var remotepath = $"{config["Iamforce2_remote_dir"]}/{filename}";
 
-                var scp = new ScpClient(config["mpc_ip"], "root");
-                scp.Connect();
-                scp.Uploading += delegate (object sender, ScpUploadEventArgs e) {
-                    log($"uploaded {e.Filename} bytes {e.Uploaded} from {e.Size}");
-                };
-
                 var file = new FileInfo(bin);
-                scp.Upload(file, remotepath);
+                Powershell.ExecuteShellCmd($" scp \"{file}\" root@{config["mpc_ip"]}:{remotepath}",100);
             }
-
-            sc = sshclient.CreateCommand("systemctl start inmusic-mpc; systemctl status inmusic-mpc");
-            sc.Execute();
-            log(sc.Result.Replace("\n", "\r\n") + "\r\n");
         }
-        private void button1_Click(object sender, EventArgs e) {
 
-            SshClient sshclient = new SshClient(config["mpc_ip"], "root");
-            sshclient.Connect();
-            SshCommand sc = sshclient.CreateCommand("systemctl stop inmusic-mpc; systemctl status inmusic-mpc");
-            sc.Execute();
-            log(sc.Result.Replace("\n", "\r\n") + "\r\n");
+        private void copyAllBinsToMpc_Click(object sender, EventArgs e) {
+            EnsurePowershell();
 
+            Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl stop inmusic-mpc",100);
             var bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*.so");
-
-            foreach (var bin in bins) {
-                log(bin.ToString());
-
-                var filename = Path.GetFileName(bin);
-                var remotepath = $"{config["Iamforce2_remote_dir"]}/{filename}";
-
-                var scp = new ScpClient(config["mpc_ip"], "root");
-                scp.Connect();
-                scp.Uploading += delegate (object sender, ScpUploadEventArgs e) {
-                    log($"uploaded {e.Filename} bytes {e.Uploaded} from {e.Size}");
-                };
-
-                var file = new FileInfo(bin);
-                scp.Upload(file, remotepath);
-            }
-
-            sc = sshclient.CreateCommand("systemctl start inmusic-mpc; systemctl status inmusic-mpc");
-            sc.Execute();
-            log(sc.Result.Replace("\n", "\r\n") + "\r\n");
-
+            CopyBins(bins);
+            Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl start inmusic-mpc", 100);
         }
 
         private void Form1_Load(object sender, EventArgs e) {
-            log(@"*** CHECK PATHES IN C\Users\.....\AppData\Local\BuildNDeploy\.....\user.config ***" + "\r\n");
-
-            log($"Iamforce2_src_path_wsl = {config["Iamforce2_src_path_wsl"]} \r\n");
-            log($"Iamforce2_src_path_windows  = {config["Iamforce2_src_path_windows"]} \r\n");
-            log($"Iamforce2_bin_path_windows = {config["Iamforce2_bin_path_windows"]} \r\n");
-            log($"Iamforce2_remote_dir = {config["Iamforce2_remote_dir"]} \r\n");
-
+            log(@"*** CHECK PATHES IN ..\BuildNDeploy\bin\Debug\net6.0-windows\appsettings.json ***" + "\r\n");
+            log($"Iamforce2_src_path_wsl = {config["Iamforce2_src_path_wsl"]}");
+            log($"Iamforce2_src_path_windows  = {config["Iamforce2_src_path_windows"]}");
+            log($"Iamforce2_bin_path_windows = {config["Iamforce2_bin_path_windows"]}");
+            log($"Iamforce2_remote_dir = {config["Iamforce2_remote_dir"]}");
+            log($"MyMpc = {config["MyMpc"]}");
+            log($"MyPad = {config["MyPad"]}");
             log("*******");
         }
 
-
-        Process logprocess;
+       
         public void Bashlog(string cmd) {
-
-
             try {
                 logprocess = new Process {
                     StartInfo = new ProcessStartInfo {
-                        FileName = "ssh ",
-                        Arguments = $"root@{config["mpc_ip"]} \"{cmd}\"",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
+                        FileName = "powershell.exe",
+                        Arguments = $"ssh root@{config["mpc_ip"]} \"{cmd}\"",
+                        RedirectStandardInput = true,
                         UseShellExecute = false,
-                        CreateNoWindow = true
+                        CreateNoWindow = false
                     },
                     EnableRaisingEvents = true
                 };
-                logprocess.OutputDataReceived += (sender, e) => { log(e.Data + ""); };
-                logprocess.ErrorDataReceived += (sender, e) => { log(e.Data + ""); };
+                logprocess.Exited += (sender, e) => Invoke(() => { checkBox1.Checked = false; });
 
                 logprocess.Start();
-                logprocess.BeginOutputReadLine();
-                logprocess.BeginErrorReadLine();
             } catch (Exception e) {
                 log($"Command {cmd} failed {e}");
             }
@@ -192,10 +190,17 @@ namespace BuildNDeploy {
                 Bashlog("journalctl -u inmusic-mpc -f");
             }
             else {
+                logprocess.CloseMainWindow();
                 logprocess?.Kill();
+                logprocess = null;
             }
         }
 
-       
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e) {
+            Powershell?.Kill();
+            logprocess?.Kill();
+        }
+
+
     }
 }
