@@ -25,6 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tmm-plugins", "tmm-plugins"
 		src\tmm-plugins\Iamforce-LPMK3.h = src\tmm-plugins\Iamforce-LPMK3.h
 		src\tmm-plugins\Iamforce-LPPROMK3.h = src\tmm-plugins\Iamforce-LPPROMK3.h
 		src\tmm-plugins\Iamforce-LPX.h = src\tmm-plugins\Iamforce-LPX.h
+		src\tmm-plugins\Iamforce-LUMI.h = src\tmm-plugins\Iamforce-LUMI.h
 		src\tmm-plugins\Iamforce-NONE.h = src\tmm-plugins\Iamforce-NONE.h
 		src\tmm-plugins\tmm-Force-A800-globals.c = src\tmm-plugins\tmm-Force-A800-globals.c
 		src\tmm-plugins\tmm-hellotkgl.c = src\tmm-plugins\tmm-hellotkgl.c

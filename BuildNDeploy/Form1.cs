@@ -15,6 +15,8 @@ namespace BuildNDeploy {
         private static extern bool SetForegroundWindow(IntPtr WindowHandle);
 
         private const int SW_NORMAL = 1;
+        private const int SW_SHOWMINIMIZED = 2;
+
         [DllImport("user32.dll")]
         static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
@@ -89,6 +91,7 @@ namespace BuildNDeploy {
             src = src.Replace("\r\n", "\n");
 
             Powershell.ExecuteBashCmd($"cd {src}");
+
             Powershell.ExecuteBashCmd("./wsl2_mk");
             Powershell.ExecuteBashCmd($"echo build done '{DateTime.Now}' ");
 
@@ -108,28 +111,59 @@ namespace BuildNDeploy {
             src = src.Replace("\r\n", "\n");
 
             Powershell.ExecuteBashCmd($"cd {src}");
-            Powershell.ExecuteBashCmd($"./wsl2_mk1 {config["MyPad"]} {config["MyMpc"]} ");
+            if (runAll.Checked) {
+                 Powershell.ExecuteBashCmd("./wsl2_mk");
+            }
+            else {
+                Powershell.ExecuteBashCmd($"./wsl2_mk1 {config["MyPad"]} {config["MyMpc"]} ");
+            }
+            
+            
             Powershell.ExecuteBashCmd($"echo build done '{DateTime.Now}' ");
             Powershell.ExecuteBashCmd("exit");
             return;
         }
 
-        private void copyTestBinToMpc_click(object sender, EventArgs e) {
 
+        int restartcounter = 7;
+        private void copyTestBinToMpc_click(object sender, EventArgs e) {
+            EnsurePowershell();
+            Powershell.ExecuteShellCmd($"ssh root@{config["mpc_ip"]} systemctl stop inmusic-mpc");
+
+            IEnumerable<string> bins;
+            if (runAll.Checked) {
+                bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*.so");
+    
+            }
+            else {
+                bins = new[] { $" {config["Iamforce2_bin_path_windows"]}\\tmm-IamForce-{config["MyPad"]}-{config["MyMpc"]}.so" };
+            }
+            
+            CopyBins(bins);
+            if (restartcounter > 5 || reboot.Checked) {
+                Powershell.ExecuteShellCmd($"ssh root@{config["mpc_ip"]} reboot");
+                restartcounter = 0;
+                reboot.Checked = false;
+            }
+            else { 
+                Powershell.ExecuteShellCmd($"ssh root@{config["mpc_ip"]} systemctl start inmusic-mpc"); 
+            }
+            restartcounter++;
+            return;
+        }
+        private void copyAllBinsToMpc_Click(object sender, EventArgs e) {
             EnsurePowershell();
 
-            Powershell.ExecuteShellCmd($" ssh root@{config["mpc_ip"]} systemctl stop inmusic-mpc");
-
-            Thread.Sleep(100); //tmm-IamForce-LPMK3-LIVE2
-            var bins = new[] { $" {config["Iamforce2_bin_path_windows"]}\\tmm-IamForce-{config["MyPad"]}-{config["MyMpc"]}.so" };
+            Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl stop inmusic-mpc", 100);
+            var bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*.so");
             CopyBins(bins);
-
-            Powershell.ExecuteShellCmd($" ssh root@{config["mpc_ip"]} systemctl start inmusic-mpc");
-            Thread.Sleep(100);
-            return;
-
-
+            Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl start inmusic-mpc", 100);
         }
+
+
+
+
+
 
         private void CopyBins(IEnumerable<string> bins) {
             foreach (var bin in bins) {
@@ -143,14 +177,7 @@ namespace BuildNDeploy {
             }
         }
 
-        private void copyAllBinsToMpc_Click(object sender, EventArgs e) {
-            EnsurePowershell();
-
-            Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl stop inmusic-mpc",100);
-            var bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*.so");
-            CopyBins(bins);
-            Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl start inmusic-mpc", 100);
-        }
+       
 
         private void Form1_Load(object sender, EventArgs e) {
             log(@"*** CHECK PATHES IN ..\BuildNDeploy\bin\Debug\net6.0-windows\appsettings.json ***" + "\r\n");
@@ -170,20 +197,23 @@ namespace BuildNDeploy {
                     StartInfo = new ProcessStartInfo {
                         FileName = "powershell.exe",
                         Arguments = $"ssh root@{config["mpc_ip"]} \"{cmd}\"",
-                        RedirectStandardInput = true,
+                      //  RedirectStandardInput = true,
+                        RedirectStandardOutput = true,
                         UseShellExecute = false,
-                        CreateNoWindow = false
+                        CreateNoWindow = true
                     },
                     EnableRaisingEvents = true
                 };
                 logprocess.Exited += (sender, e) => Invoke(() => { checkBox1.Checked = false; });
-
+                logprocess.OutputDataReceived += (sender, e) => { log((e.Data+"").Replace("mpc-live-ii az01-launch-MPC","")); };
                 logprocess.Start();
+                logprocess.BeginOutputReadLine();
             } catch (Exception e) {
                 log($"Command {cmd} failed {e}");
             }
         }
 
+      
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e) {
             if (checkBox1.Checked) {

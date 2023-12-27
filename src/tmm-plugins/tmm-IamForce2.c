@@ -62,13 +62,6 @@ IAMFORCE PLUGIN -- Force Emulation on MPC
 
 #define IAMFORCE_VERSION "V2.0 BETA"
 
-// MPC Quadran OFFSETS
-// 1 2
-// 3 4
-//#define MPC_QUADRAN_1 0
-//#define MPC_QUADRAN_2 4
-//#define MPC_QUADRAN_3 32
-//#define MPC_QUADRAN_4 36
 
 #define MPC_BANK_A 1
 #define MPC_BANK_B 2
@@ -175,31 +168,8 @@ static int CurrentMatrixVOffset=0;
 
 // Quadran for external controller (none by default)
 static int CtrlPadQuadran = 0;
+static int trackPadPressedTime = 0;
 
-// MPC Pads note mapping table. Numbering is totally anarchic
-// MPC Pad start at bottom left to top right
-//
-// wtf !!
-// (13)31 (14)37 (15)33 (16)35
-// (9) 30 (10)2F (11)2D (12)2B
-// (5) 28 (6) 26 (7) 2E (8) 2C
-// (1) 25 (2) 24 (3) 2A (4) 52
-// OxFF = no value
-
-static const uint8_t MPC_PadNoteMapToIndex[]
-= { 
-  1, 0, 5, 0xff, 4, 0xff, 2, 11,
-//    0x24,       0x25,     0x26,    (0x27),   0x28,   (0x29),    0x2A,     0x2B,
-    7, 10, 6, 9, 8, 12, 0xff,  14,
-//    0x2C,       0x2D,     0x2E,     0x2F,     0x30,      0x31,   (0x32)   0x33,
-  0xff,  15, 0xff, 13,
-// (0x34), 0x35,    (0x36)   0x37,
-0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff, 0xff,0xff,0xff,
-0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff, 0xff,0xff,0xff,
-// 0x38 - 0x51 : nothing
-3 
-// 0x52
-};
 
 typedef struct mapping {
     int force;
@@ -212,9 +182,6 @@ typedef struct mapping {
 
 // Function prototypes ---------------------------------------------------------
 
-//static int ForceGet MPCPadIndex(uint8_t padF);
-//static int ForceGetMP CPadIndex_org(uint8_t padF);
-
 static void MPCSetMapButtonLed(snd_seq_event_t *ev);
 static void MPCSetMapButton(snd_seq_event_t *ev) ;
 
@@ -226,11 +193,10 @@ static void MPCRefresCurrentQuadran() ;
 static mapping getForceMappingValue(uint8_t mpcValue);
 
 static uint8_t getForcePadIndex(uint8_t mpcPad);
-static uint8_t mapPadToTrackmapping(uint8_t mpcPad);
+static uint8_t mapForceNote(mapping* values, int mpckey, int size);
 
 // Midi controller specific ----------------------------------------------------
 // Include here your own controller implementation
-
 
 //map mpc pad to chromatic notes in force NOTES mode
 static mapping mpcPadForceNoteMapping[] = {
@@ -239,15 +205,6 @@ static mapping mpcPadForceNoteMapping[] = {
     {114,40}, {115,38}, {116,46}, {117,44},
     {110,37}, {111,36}, {112,42}, {113,82}
 };
-static uint8_t mapForceNote_ForceNoteMapping(uint8_t mpcPad) {
-    size_t size = sizeof(mpcPadForceNoteMapping) / sizeof(mpcPadForceNoteMapping[0]);
-    for (int i = 0; i < size; i++) {
-        if (mpcPadForceNoteMapping[i].mpc == mpcPad) {
-            return mpcPadForceNoteMapping[i].force;
-        }
-    }
-    return 0;
-}
 
 //map steps 2x8 first bar to 4x4 padmatrix in STEP mode
 //if quadrant = 2 then force step +=16
@@ -255,61 +212,22 @@ static mapping mpcPadForceStepsMapping[] = {
      {54,49}, {55,55}, {56,51}, {57,53}, {58,48}, {59,47}, {60,45}, {61,43},
      {62,40}, {63,38}, {64,46}, {65,44}, {66,37}, {67,36}, {68,42}, {69,82}
 };
-static uint8_t mapForceNote_ForceStepsMapping(uint8_t mpcPad) {
-    size_t size = sizeof(mpcPadForceStepsMapping) / sizeof(mpcPadForceStepsMapping[0]);
-    for (int i = 0; i < size; i++) {
-        if (mpcPadForceStepsMapping[i].mpc == mpcPad) {
-            return mpcPadForceStepsMapping[i].force;
-        }
-    }
-    return 0;
-}
 
 static mapping mpcPadToMute[] = {
     {FORCE_BT_MUTE_PAD5,40}, {FORCE_BT_MUTE_PAD6,38}, {FORCE_BT_MUTE_PAD7,46}, {FORCE_BT_MUTE_PAD8,44},
     {FORCE_BT_MUTE_PAD1,37}, {FORCE_BT_MUTE_PAD2,36}, {FORCE_BT_MUTE_PAD3,42}, {FORCE_BT_MUTE_PAD4,82}
 };
-static uint8_t mapPadToMutemapping(uint8_t mpcPad) {
-    size_t size = sizeof(mpcPadToMute) / sizeof(mpcPadToMute[0]);
-    for (int i = 0; i < size; i++) {
-        if (mpcPadToMute[i].mpc == mpcPad) {
-            return mpcPadToMute[i].force;
-        }
-    }
-    return 0;
-}
-
 
 static mapping mpcPadToLaunch[] = {
     {FORCE_BT_LAUNCH_5,40}, {FORCE_BT_LAUNCH_6,38}, {FORCE_BT_LAUNCH_7,46}, {FORCE_BT_LAUNCH_8,44},
     {FORCE_BT_LAUNCH_1,37}, {FORCE_BT_LAUNCH_2,36}, {FORCE_BT_LAUNCH_3,42}, {FORCE_BT_LAUNCH_4,82}
 };
-static uint8_t mapPadToLaunchmapping(uint8_t mpcPad) {
-    size_t size = sizeof(mpcPadToLaunch) / sizeof(mpcPadToLaunch[0]);
-    for (int i = 0; i < size; i++) {
-        if (mpcPadToLaunch[i].mpc == mpcPad) {
-            return mpcPadToLaunch[i].force;
-        }
-    }
-    return 0;
-}
-
-
 
 static mapping mpcPadToTrack[] = {
     {FORCE_BT_COLUMN_PAD5,40}, {FORCE_BT_COLUMN_PAD6,38}, {FORCE_BT_COLUMN_PAD7,46}, {FORCE_BT_COLUMN_PAD8,44},
     {FORCE_BT_COLUMN_PAD1,37}, {FORCE_BT_COLUMN_PAD2,36}, {FORCE_BT_COLUMN_PAD3,42}, {FORCE_BT_COLUMN_PAD4,82}
 };
-static uint8_t mapPadToTrackmapping(uint8_t mpcPad) {
-    size_t size = sizeof(mpcPadToTrack) / sizeof(mpcPadToTrack[0]);
-    for (int i = 0; i < size; i++) {
-        if (mpcPadToTrack[i].mpc == mpcPad) {
-            return mpcPadToTrack[i].force;
-        }
-    }
-    return 0;
-}
- 
+
 //map bank A (Q3) and bank B (Q4) map to 4x4 matrix in STEP mode
 // if quadrant = 4 then force +=4
 static mapping mpcPadForceStepmodeNotemapping[] = {
@@ -318,16 +236,15 @@ static mapping mpcPadForceStepmodeNotemapping[] = {
     {102,40}, {103,38}, {104,46}, {105,44},
     {110,37}, {111,36}, {112,42}, {113,82}
 };
-static uint8_t mapForceNote_ForceStepmodeNotemapping(uint8_t mpcPad) {
-    size_t size = sizeof(mpcPadForceStepmodeNotemapping) / sizeof(mpcPadForceStepmodeNotemapping[0]);
+
+static uint8_t mapForceNote(mapping* values, int mpckey, int size) {
     for (int i = 0; i < size; i++) {
-        if (mpcPadForceStepmodeNotemapping[i].mpc == mpcPad) {
-            return mpcPadForceStepmodeNotemapping[i].force;
+        if (values[i].mpc == mpckey) {
+            return values[i].force;
         }
     }
     return 0;
 }
-
 
 static uint8_t getForcePadIndex(uint8_t mpcPad) {
     uint8_t ForcePadNote = 0;
@@ -335,7 +252,7 @@ static uint8_t getForcePadIndex(uint8_t mpcPad) {
     if (currentPadMode == FORCE_BT_STEP_SEQ) {
         //STEPS
         if (MPCPadQuadran == MPC_BANK_C || MPCPadQuadran == MPC_BANK_D || MPCPadQuadran == MPC_BANK_G || MPCPadQuadran == MPC_BANK_H) {
-            ForcePadNote = mapForceNote_ForceStepsMapping(mpcPad);
+            ForcePadNote = mapForceNote(mpcPadForceStepsMapping, mpcPad, 16);
             switch (MPCPadQuadran) {
                 case MPC_BANK_D: ForcePadNote += 16; break;
                 case MPC_BANK_G: ForcePadNote += 32; break;
@@ -344,14 +261,14 @@ static uint8_t getForcePadIndex(uint8_t mpcPad) {
         }
         //NOTES AND VELOCITY
         else {
-            ForcePadNote = mapForceNote_ForceStepmodeNotemapping(mpcPad);
+            ForcePadNote = mapForceNote(mpcPadForceStepmodeNotemapping, mpcPad, 16);
             if (MPCPadQuadran == MPC_BANK_B) {
                 ForcePadNote += 4;
             }
         }
     }
     else if (currentPadMode == FORCE_BT_NOTE) {
-        ForcePadNote = mapForceNote_ForceNoteMapping(mpcPad);
+        ForcePadNote = mapForceNote(mpcPadForceNoteMapping, mpcPad, 16);
         switch (MPCPadQuadran) {
             case MPC_BANK_B: ForcePadNote -= 16; break;
             case MPC_BANK_C: ForcePadNote -= 32; break;
@@ -359,7 +276,7 @@ static uint8_t getForcePadIndex(uint8_t mpcPad) {
         }
     }
     else if (currentPadMode == FORCE_BT_LAUNCH) {
-        ForcePadNote = mapForceNote_ForceStepmodeNotemapping(mpcPad);
+        ForcePadNote = mapForceNote(mpcPadForceStepmodeNotemapping, mpcPad, 16);
         
         switch (MPCPadQuadran) {
             case MPC_BANK_D: ForcePadNote += 4; break;
@@ -486,7 +403,7 @@ static mapping getForceMappingValue(uint8_t mpcValue) {
 
 // To compile define one of the following preprocesseur variables :
 // NONE is the default.
-//#define _LPMK3_
+#define _LUMI_
 #if defined _APCKEY25MK2_
    #warning IamForce driver id : APCKEY25MK2
    #include "Iamforce-APCKEY25MK2.h"
@@ -508,6 +425,9 @@ static mapping getForceMappingValue(uint8_t mpcValue) {
 #elif defined _KIKPADMK3_
    #warning IamForce driver id : KIKPADMK3
    #include "Iamforce-KIKPADMK3.h"
+#elif defined _LUMI_
+    #warning IamForce driver id : LUMI
+    #include "Iamforce-LUMI.h"
 #else 
    #warning IamForce driver id : NONE
    #include "Iamforce-NONE.h"
@@ -559,8 +479,6 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
 
       ev->data.control.param = MPC_BT_BANK_B;
       SendMidiEvent(ev);
-
-     
 
       ev->data.control.param = MPC_BT_BANK_D;
       SendMidiEvent(ev);
@@ -657,17 +575,10 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
         EraseMode = (ev->data.note.velocity == 0x7F);
     }
 
-  /*  if (ev->data.note.note == MPC_BT_PLAY_START) {
-        LaunchMode = (ev->data.note.velocity == 0x7F);
-        tklog_debug("LaunchMode %d\n", LaunchMode);
-    }*/
-
     if ( ev->data.note.note == MPC_BT_SHIFT ) {
         ShiftMode = ( ev->data.note.velocity == 0x7F ) ;
         mapVal = FORCE_BT_SHIFT ;
     }
-
-
 
     //shift + long press tap tempo open metronom
     else if (ShiftMode && ev->data.note.note == MPC_BT_TAP_TEMPO) {
@@ -822,6 +733,11 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
                 mapVal = FORCE_BT_KNOBS;
             }
         }
+        else {
+            tklog_debug("Knob touch with shift release before");
+            SendDeviceKeyEvent(FORCE_BT_SHIFT, 0);
+            mapVal = FORCE_BT_KNOBS;
+        }
     }
     else if (  ev->data.note.note >= MPC_BT_QLINK1_TOUCH && ev->data.note.note <= MPC_BT_QLINK16_TOUCH ) {
       mapVal = ev->data.note.note - 1 ;
@@ -907,7 +823,7 @@ void MidiMapperSetup() {
 // Midi mapper events processing
 ///////////////////////////////////////////////////////////////////////////////
 
-static int trackPadPressedTime = 0;
+
 bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t size ) {
 
     switch (sender) {
@@ -916,9 +832,15 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
         // RAW MIDI. NO EVENT. USE BUFFER and SIZE (SYSEX)
     case FROM_MPC_PUBLIC:
     {
+       
 
         int i = 0;
-       // tklog_info("Midi RAW Event received from MPC PUBLIC\n");
+        //tklog_info("Midi RAW Event received from MPC PUBLIC %s\n", buffer[0]);
+
+       /* tklog_info("Midi RAW Event %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\n",
+            buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6], buffer[7], buffer[8], buffer[9],
+            buffer[10], buffer[11], buffer[12], buffer[13], buffer[14], buffer[15]);*/
+
 
         // Akai Sysex :  F0 47 7F [id] (Fn) (len MSB) (len LSB) (data) F7
         while (buffer[i] == 0xF0 && buffer[i + 1] == 0x47 && i < size) {
@@ -952,7 +874,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                     Force_PadColorsCache[padF].c.g = buffer[i++];
                     Force_PadColorsCache[padF].c.b = buffer[i++];
                     if (Force_PadColorsCache[padF].c.g >= 64 || Force_PadColorsCache[padF].c.r >= 64 || Force_PadColorsCache[padF].c.b >= 64) {
-                        tklog_debug("PAD COLOR padF=%d greenvalue=%d \n", padF, Force_PadColorsCache[padF].c.g);
+//                        tklog_debug("PAD COLOR padF=%d greenvalue=%d \n", padF, Force_PadColorsCache[padF].c.g);
 
 
                     }
@@ -1060,7 +982,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                                 trackPadPressedTime = 0;
                             }
                         }
-                        uint8_t track = mapPadToLaunchmapping(ev->data.note.note);
+                        uint8_t track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 8);// mapPadToLaunchmapping(ev->data.note.note);
                         if (track > 0) {
                           //  tklog_debug("PAD launch received %d velocity: %d\n", track, ev->data.note.velocity);
                             SendDeviceKeyPress(track);
@@ -1084,7 +1006,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                                 trackPadPressedTime = 0;
                             }
                         }
-                        uint8_t track = mapPadToTrackmapping(ev->data.note.note);
+                        uint8_t track = mapForceNote(mpcPadToTrack, ev->data.note.note, 8);// mapPadToTrackmapping(ev->data.note.note);
                         if (track > 0) {
                             //tklog_debug("PAD track delete received %d vole: %d\n", track, ev->data.note.velocity);
                             SendDeviceKeyPress(track);
@@ -1105,9 +1027,9 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                                 trackPadPressedTime = 0;
                             }
                         }
-                        uint8_t track = mapPadToMutemapping(ev->data.note.note);
+                        uint8_t track = mapForceNote(mpcPadToMute, ev->data.note.note, 8);// mapPadToMutemapping(ev->data.note.note);
                         if (track > 0) {
-                           // tklog_debug("PAD rec arm received %d velocity: %d\n", track, ev->data.note.velocity);
+                            tklog_debug("PAD rec arm received %d velocity: %d\n", track, ev->data.note.velocity);
                             SendDeviceKeyPress(track);
                             trackPadPressedTime = time(NULL);
                         }
@@ -1148,7 +1070,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
         // to send specific CC/channel 16 to the  port name = "TKGL_(your controller name)" to trig those commands.
 
     case FROM_MPC_EXTCTRL:
-        tklog_debug("Midi Event received from MPC EXCTRL\n");
+        //tklog_debug("Midi Event received from MPC EXCTRL\n");
         if (ev->type == SND_SEQ_EVENT_CONTROLLER) {
 
             // Is it one of our IAMFORCE macros on midi channel 16 ?

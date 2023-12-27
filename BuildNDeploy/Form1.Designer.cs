@@ -23,43 +23,19 @@
         ///  the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
-            runbuild = new Button();
-            button1 = new Button();
             checkBox1 = new CheckBox();
             button2 = new Button();
             button3 = new Button();
             logtext = new TextBox();
+            runAll = new CheckBox();
+            reboot = new CheckBox();
             SuspendLayout();
-            // 
-            // runbuild
-            // 
-            runbuild.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            runbuild.Location = new Point(748, 348);
-            runbuild.Margin = new Padding(3, 2, 3, 2);
-            runbuild.Name = "runbuild";
-            runbuild.Size = new Size(143, 25);
-            runbuild.TabIndex = 0;
-            runbuild.Text = "run build on wsl2";
-            runbuild.UseVisualStyleBackColor = true;
-            runbuild.Click += runbuild_Click;
-            // 
-            // button1
-            // 
-            button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            button1.Location = new Point(450, 347);
-            button1.Margin = new Padding(3, 2, 3, 2);
-            button1.Name = "button1";
-            button1.Size = new Size(143, 25);
-            button1.TabIndex = 1;
-            button1.Text = "deploy to mpc";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += copyAllBinsToMpc_Click;
             // 
             // checkBox1
             // 
             checkBox1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(10, 347);
+            checkBox1.Location = new Point(10, 240);
             checkBox1.Margin = new Padding(3, 2, 3, 2);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(240, 19);
@@ -71,53 +47,78 @@
             // button2
             // 
             button2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            button2.Location = new Point(301, 347);
+            button2.Location = new Point(612, 240);
             button2.Margin = new Padding(3, 2, 3, 2);
             button2.Name = "button2";
             button2.Size = new Size(143, 25);
             button2.TabIndex = 4;
-            button2.Text = "deploy test to mpc";
+            button2.Text = "deploy to mpc";
             button2.UseVisualStyleBackColor = true;
             button2.Click += copyTestBinToMpc_click;
             // 
             // button3
             // 
             button3.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            button3.Location = new Point(599, 347);
+            button3.Location = new Point(761, 240);
             button3.Margin = new Padding(3, 2, 3, 2);
             button3.Name = "button3";
             button3.Size = new Size(143, 25);
             button3.TabIndex = 5;
-            button3.Text = "run test build on wsl2";
+            button3.Text = "run build on wsl2";
             button3.UseVisualStyleBackColor = true;
             button3.Click += runTestBuild_Click;
             // 
             // logtext
             // 
             logtext.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            logtext.BackColor = SystemColors.InfoText;
+            logtext.BackColor = Color.MidnightBlue;
+            logtext.BorderStyle = BorderStyle.FixedSingle;
             logtext.Font = new Font("Lucida Console", 11.25F, FontStyle.Regular, GraphicsUnit.Point);
             logtext.ForeColor = SystemColors.Window;
-            logtext.Location = new Point(1, 2);
+            logtext.Location = new Point(0, 0);
             logtext.Margin = new Padding(3, 2, 3, 2);
             logtext.Multiline = true;
             logtext.Name = "logtext";
             logtext.ScrollBars = ScrollBars.Vertical;
-            logtext.Size = new Size(899, 341);
+            logtext.Size = new Size(915, 234);
             logtext.TabIndex = 12;
             logtext.WordWrap = false;
+            // 
+            // runAll
+            // 
+            runAll.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            runAll.AutoSize = true;
+            runAll.Location = new Point(568, 244);
+            runAll.Margin = new Padding(3, 2, 3, 2);
+            runAll.Name = "runAll";
+            runAll.Size = new Size(38, 19);
+            runAll.TabIndex = 13;
+            runAll.Text = "all";
+            runAll.UseVisualStyleBackColor = true;
+            // 
+            // reboot
+            // 
+            reboot.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            reboot.AutoSize = true;
+            reboot.Location = new Point(491, 244);
+            reboot.Margin = new Padding(3, 2, 3, 2);
+            reboot.Name = "reboot";
+            reboot.Size = new Size(61, 19);
+            reboot.TabIndex = 14;
+            reboot.Text = "reboot";
+            reboot.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(903, 376);
+            ClientSize = new Size(916, 269);
+            Controls.Add(reboot);
+            Controls.Add(runAll);
             Controls.Add(logtext);
             Controls.Add(button3);
             Controls.Add(button2);
             Controls.Add(checkBox1);
-            Controls.Add(button1);
-            Controls.Add(runbuild);
             Margin = new Padding(3, 2, 3, 2);
             Name = "Form1";
             Text = "Form1";
@@ -128,12 +129,11 @@
         }
 
         #endregion
-
-        private Button runbuild;
-        private Button button1;
         private CheckBox checkBox1;
         private Button button2;
         private Button button3;
         private TextBox logtext;
+        private CheckBox runAll;
+        private CheckBox reboot;
     }
 }
