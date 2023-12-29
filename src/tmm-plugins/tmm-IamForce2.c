@@ -168,7 +168,7 @@ static int CurrentMatrixVOffset=0;
 
 // Quadran for external controller (none by default)
 static int CtrlPadQuadran = 0;
-static int trackPadPressedTime = 0;
+
 
 
 typedef struct mapping {
@@ -213,7 +213,17 @@ static mapping mpcPadForceStepsMapping[] = {
      {62,40}, {63,38}, {64,46}, {65,44}, {66,37}, {67,36}, {68,42}, {69,82}
 };
 
+bool upperrow(int mpckey) {
+    if (mpckey == 49 || mpckey == 55 || mpckey == 51 || mpckey == 53 || mpckey == 48 || mpckey == 47 || mpckey == 45 || mpckey == 43) {
+        return true;
+    }
+    return false;
+}
+
 static mapping mpcPadToMute[] = {
+    {FORCE_BT_MUTE_PAD5,49}, {FORCE_BT_MUTE_PAD6,55}, {FORCE_BT_MUTE_PAD7,51}, {FORCE_BT_MUTE_PAD8,53},
+    {FORCE_BT_MUTE_PAD1,48}, {FORCE_BT_MUTE_PAD2,47}, {FORCE_BT_MUTE_PAD3,45}, {FORCE_BT_MUTE_PAD4,43},
+
     {FORCE_BT_MUTE_PAD5,40}, {FORCE_BT_MUTE_PAD6,38}, {FORCE_BT_MUTE_PAD7,46}, {FORCE_BT_MUTE_PAD8,44},
     {FORCE_BT_MUTE_PAD1,37}, {FORCE_BT_MUTE_PAD2,36}, {FORCE_BT_MUTE_PAD3,42}, {FORCE_BT_MUTE_PAD4,82}
 };
@@ -357,7 +367,6 @@ static mapping buttonmapping[] = {
     {FORCE_BT_TAP_TEMPO, MPC_BT_TAP_TEMPO},
     {FORCE_BT_UNDO, MPC_BT_UNDO},
     {FORCE_BT_NOTE, MPC_BT_16_LEVEL},
-    {FORCE_BT_COPY, MPC_BT_COPY},
     {FORCE_BT_MENU, MPC_BT_MENU,0,1,FORCE_BT_LOAD},
     {FORCE_BT_ARP, MPC_BT_NOTE_REPEAT},
 
@@ -372,7 +381,7 @@ static mapping buttonmapping[] = {
 #warning MPC Model MPC LIVE II
     {FORCE_BT_DELETE, MPC_BT_ERASE },
     {FORCE_BT_MIXER, MPC_BT_CHANNEL_MIXER},
-    {FORCE_BT_SAVE, MPC_BT_FULL_LEVEL},
+    {FORCE_BT_MASTER, MPC_BT_FULL_LEVEL},
     {FORCE_BT_NAVIGATE, MPC_BT_NEXT_SEQ, FORCE_BT_CLIP },
     {FORCE_BT_STEP_SEQ, MPC_BT_STEP_SEQ},
     {FORCE_BT_STOP, MPC_BT_STOP},
@@ -403,7 +412,7 @@ static mapping getForceMappingValue(uint8_t mpcValue) {
 
 // To compile define one of the following preprocesseur variables :
 // NONE is the default.
-#define _LUMI_
+//#define _LUMI_
 #if defined _APCKEY25MK2_
    #warning IamForce driver id : APCKEY25MK2
    #include "Iamforce-APCKEY25MK2.h"
@@ -448,6 +457,7 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
   if (ev->data.control.value == 3 &&
       (ev->data.control.param == FORCE_BT_NOTE || ev->data.control.param == FORCE_BT_STEP_SEQ || ev->data.control.param == FORCE_BT_LAUNCH)) {
       tklog_debug("switch padmode to %d\n", ev->data.control.param);
+
       currentPadMode = ev->data.control.param;
   }
 
@@ -498,6 +508,10 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
       ev->data.control.param = MPC_BT_BANK_C;
       ev->data.control.value = MPC_BUTTON_COLOR_RED_HI;
       SendMidiEvent(ev);
+
+      ev->data.control.param = MPC_BT_COPY;
+      SendMidiEvent(ev);
+
 
       return;
   }
@@ -555,8 +569,21 @@ static void SetBankButtonLED(int button,bool shift) {
     MPCRefresCurrentQuadran();
 }
 
-static int Current_QLink_LED = MPC_BT_QLINK_SELECT_LED_1;
+static void SetButtonLED(int button, int MPC_BUTTON_COLOR) {
+    snd_seq_event_t ev2;
+    snd_seq_ev_clear(&ev2);
+    ev2.type = SND_SEQ_EVENT_CONTROLLER;
+    ev2.data.control.channel = 0;
+    SetMidiEventDestination(&ev2, TO_CTRL_MPC_PRIVATE);
+    ev2.data.control.param = button;
+    ev2.data.control.value = MPC_BUTTON_COLOR;
+    SendMidiEvent(&ev2);
+}
 
+
+
+static int Current_QLink_LED = MPC_BT_QLINK_SELECT_LED_1;
+static int currentcopycolor = 0;
 ///////////////////////////////////////////////////////////////////////////////
 // Set a mapped MPC button  to a Force button
 ///////////////////////////////////////////////////////////////////////////////
@@ -684,6 +711,7 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
         ev->data.note.note == MPC_BT_STEP_SEQ ||
         ev->data.note.note == MPC_BT_MUTE ||
         ev->data.note.note == MPC_BT_MENU ||
+        //ev->data.note.note == MPC_BT_COPY ||
         ev->data.note.note == MPC_BT_MINUS ||
         ev->data.note.note == MPC_BT_PLUS
         ) {
@@ -756,8 +784,14 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
       mapVal = ( ShiftMode ? FORCE_BT_STOP_ALL : FORCE_BT_STOP);
     }
     else if (  ev->data.note.note == MPC_BT_COPY ) {
-      shiftReleaseBefore = ShiftMode;
-      mapVal = ( ShiftMode ? FORCE_BT_DELETE : FORCE_BT_COPY);
+        if (currentPadMode == FORCE_BT_LAUNCH) {
+            SetButtonLED(MPC_BT_COPY, 3);
+            mapVal = FORCE_BT_COPY;
+        }
+        else {
+            SetButtonLED(MPC_BT_COPY, 1);
+            mapVal = FORCE_BT_MUTE;
+        }
     }
 
     //tklog_debug("Button %0x mapped to %0x (Shiftmode = %s)\n",ev->data.note.note,mapVal,ShiftMode ? "SHIFT MODE":"");
@@ -913,16 +947,16 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
         case SND_SEQ_EVENT_CONTROLLER:
             // Button Led
             if (ev->data.control.channel == 0) {
+                if (ev->data.control.param != 122) {
+                    // Save Led status in cache
+                    Force_ButtonLedsCache[ev->data.control.param] = ev->data.control.value;
+                    if (ev->data.control.param != 53) tklog_debug("ButtonLedCache param: %d -> value: %d \n", ev->data.control.param, ev->data.control.value);
+                    // Map with controller leds. Will send a midi msg to the controller
+                    ControllerSetMapButtonLed(ev);
 
-                // Save Led status in cache
-                Force_ButtonLedsCache[ev->data.control.param] = ev->data.control.value;
-                //tklog_debug("ButtonLedCache param: %d -> value: %d \n", ev->data.control.param, ev->data.control.value);
-                // Map with controller leds. Will send a midi msg to the controller
-                ControllerSetMapButtonLed(ev);
-
-                // Map with MPC device leds
-                MPCSetMapButtonLed(ev);
-
+                    // Map with MPC device leds
+                    MPCSetMapButtonLed(ev);
+                }
                 return false;
 
             }
@@ -970,82 +1004,39 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
             // Mpc Pads on channel 9
             if (ev->data.note.channel == 9) {
                 //tklog_debug("PAD track received currentPadMode %d  shiftmode %d\n", currentPadMode, ShiftMode);
-                if ((MatrixActive || currentPadMode == FORCE_BT_LAUNCH) && ShiftMode) {
-                    if (ev->data.note.velocity > 0) {
-                        if (trackPadPressedTime > 0) {
-                            int duration = time(NULL) - trackPadPressedTime;
-                            if (duration == 0) {
-                                // tklog_debug("track pad duration= %d\n", duration);
-                                return false;
-                            }
-                            else {
-                                trackPadPressedTime = 0;
-                            }
-                        }
-                        uint8_t track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 8);// mapPadToLaunchmapping(ev->data.note.note);
-                        if (track > 0) {
-                          //  tklog_debug("PAD launch received %d velocity: %d\n", track, ev->data.note.velocity);
-                            SendDeviceKeyPress(track);
-                            trackPadPressedTime = time(NULL);
-                        }
-                    }
-                    return false;
-                }
+                
+                if (((MatrixActive || currentPadMode == FORCE_BT_LAUNCH) && ShiftMode) || EraseMode || MixPressed) {
+                
+                    if (ev->type == SND_SEQ_EVENT_NOTEON) {
+                        uint8_t track = 0;
+                        if      (EraseMode) { track = mapForceNote(mpcPadToTrack,  ev->data.note.note, 8); }
+                        else if (MixPressed){ track = mapForceNote(mpcPadToMute,   ev->data.note.note, 16); }
+                        else {                track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 8); }
 
-               
-              
-                if (EraseMode) {
-                    if (ev->data.note.velocity > 0) {
-                        if (trackPadPressedTime > 0) {
-                            int duration = time(NULL) - trackPadPressedTime;
-                            if (duration == 0) {
-                                // tklog_debug("track pad duration= %d\n", duration);
-                                return false;
-                            }
-                            else {
-                                trackPadPressedTime = 0;
-                            }
-                        }
-                        uint8_t track = mapForceNote(mpcPadToTrack, ev->data.note.note, 8);// mapPadToTrackmapping(ev->data.note.note);
                         if (track > 0) {
-                            //tklog_debug("PAD track delete received %d vole: %d\n", track, ev->data.note.velocity);
+                            if (MixPressed) { 
+                                if (upperrow(ev->data.note.note)) {
+                                    SendDeviceKeyPress(FORCE_BT_MUTE);
+                                }
+                                else {
+                                    SendDeviceKeyPress(FORCE_BT_REC_ARM);
+                                }
+                            }
                             SendDeviceKeyPress(track);
                         }
+
                     }
                     return false;
-                }
-                if (MixPressed) {
-                    
-                    if (ev->data.note.velocity > 0) {
-                        if (trackPadPressedTime > 0) {
-                            int duration = time(NULL) - trackPadPressedTime;
-                            if (duration == 0) {
-                               // tklog_debug("track pad duration= %d\n", duration);
-                                return false;
-                            }
-                            else {
-                                trackPadPressedTime = 0;
-                            }
-                        }
-                        uint8_t track = mapForceNote(mpcPadToMute, ev->data.note.note, 8);// mapPadToMutemapping(ev->data.note.note);
-                        if (track > 0) {
-                            tklog_debug("PAD rec arm received %d velocity: %d\n", track, ev->data.note.velocity);
-                            SendDeviceKeyPress(track);
-                            trackPadPressedTime = time(NULL);
-                        }
-                    }
-                    return false;
+                
                 }
 
                 uint8_t ForcePadNote = ev->data.note.note;
                 ForcePadNote = getForcePadIndex(ev->data.note.note);
                 if (ev->data.note.velocity > 0) {
-                    tklog_debug("PAD Event received as usual padmode %d -> orgnote= %d forcenote %d\n",currentPadMode, ev->data.note.note, ForcePadNote);
+                    //tklog_debug("PAD Event received as usual padmode %d -> orgnote= %d forcenote %d\n",currentPadMode, ev->data.note.note, ForcePadNote);
                 }
 
                 ev->data.note.note = ForcePadNote;
-
-               
 
                 // If Shift Mode, simulate Select key
                 if (ShiftMode) {
@@ -1054,8 +1045,6 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                     SendDeviceKeyEvent(FORCE_BT_SELECT, 0);
                     return false;
                 }
-
-                   
 
             }
 

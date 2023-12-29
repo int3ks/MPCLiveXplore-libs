@@ -63,16 +63,6 @@ static mapping mpcPadForceStepmodeLUMImapping[] = {
     {86,48},   {87,49},   {88,50},   {89,51},
 };
 
-static mapping mpcPadForceNotesModeLUMImapping[] = {
-    {110,36},  {111,37},  {112,38},  {113,39},
-    {114,40},  {115,41},  {116,42},  {117,43},
-    {102,44},  {103,45},  {104,46},  {105,47},
-    {106,48},  {107,49},  {108,50},  {109,51},
-    {94,52},   {95,53},   {96,54},   {97,55},
-    {98,56},   {99,57},   {100,58},  {101,59},
-
-};
-
 static mapping lumiToMute[] = {
     {FORCE_BT_MUTE_PAD5,43}, {FORCE_BT_MUTE_PAD6,45}, {FORCE_BT_MUTE_PAD7,47}, {FORCE_BT_MUTE_PAD8,48},
     {FORCE_BT_MUTE_PAD1,36}, {FORCE_BT_MUTE_PAD2,38}, {FORCE_BT_MUTE_PAD3,40}, {FORCE_BT_MUTE_PAD4,41}
@@ -94,47 +84,14 @@ static bool ControllerEventReceived(snd_seq_event_t *ev) {
     case SND_SEQ_EVENT_NOTEOFF:
     case SND_SEQ_EVENT_KEYPRESS:
       if ( ev->data.note.channel == 0 ) {
-
-          if (ShiftMode) {
-
-              if (trackPadPressedTime > 0) {
-                  int duration = time(NULL) - trackPadPressedTime;
-                  if (duration == 0) {
-                      // tklog_debug("track pad duration= %d\n", duration);
-                      return false;
-                  }
-                  else {
-                      trackPadPressedTime = 0;
-                  }
-              }
-
-              uint8_t track = mapForceNote(lumiToMute, ev->data.note.note, 8);// mapPadToMutemapping(ev->data.note.note);
-              tklog_debug("Controller Event + Shift received %d note %d track %d\n", currentPadMode, ev->data.note.note, track);
-              if (track > 0) {
-                   tklog_debug("PAD rec arm received %d velocity: %d\n", track, ev->data.note.velocity);
-                  
-                   SendDeviceKeyEvent(FORCE_BT_SHIFT, 0);
-                   SendDeviceKeyEvent(track, 0x7F);
-                   SendDeviceKeyEvent(track, 0);
-                  trackPadPressedTime = time(NULL);
-              }
-              return false;
-          }
-
-
         // LumiKeys
-          if (currentPadMode == FORCE_BT_STEP_SEQ || currentPadMode == FORCE_BT_NOTE) {
+          if (currentPadMode == FORCE_BT_STEP_SEQ){// || currentPadMode == FORCE_BT_NOTE) {
 
               uint8_t ForcePadNote = 0;
               if (currentPadMode == FORCE_BT_STEP_SEQ) {
                   while (ev->data.note.note > 51)ev->data.note.note -= 24;
                   while (ev->data.note.note < 36)ev->data.note.note += 24;
                   ForcePadNote = mapForceNote(mpcPadForceStepmodeLUMImapping, ev->data.note.note, 16);
-              }
-              else if (currentPadMode == FORCE_BT_NOTE) {
-                  while (ev->data.note.note > 59)ev->data.note.note -= 24;
-                  while (ev->data.note.note < 36)ev->data.note.note += 24;
-                  ForcePadNote = mapForceNote(mpcPadForceNotesModeLUMImapping, ev->data.note.note, 24);
               }
               if (ForcePadNote == 0) {
                  // tklog_debug("ForcePadNote is null for %d, return;\n", ev->data.note.note);

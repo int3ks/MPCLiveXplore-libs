@@ -136,7 +136,7 @@ namespace BuildNDeploy {
     
             }
             else {
-                bins = new[] { $" {config["Iamforce2_bin_path_windows"]}\\tmm-IamForce-{config["MyPad"]}-{config["MyMpc"]}.so" };
+                bins = new[] { $"{config["Iamforce2_bin_path_windows"]}\\tmm-IamForce-{config["MyPad"]}-{config["MyMpc"]}.so" };
             }
             
             CopyBins(bins);
@@ -151,14 +151,14 @@ namespace BuildNDeploy {
             restartcounter++;
             return;
         }
-        private void copyAllBinsToMpc_Click(object sender, EventArgs e) {
-            EnsurePowershell();
+        //private void copyAllBinsToMpc_Click(object sender, EventArgs e) {
+        //    EnsurePowershell();
 
-            Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl stop inmusic-mpc", 100);
-            var bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*.so");
-            CopyBins(bins);
-            Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl start inmusic-mpc", 100);
-        }
+        //    Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl stop inmusic-mpc", 100);
+        //    var bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*.so");
+        //    CopyBins(bins);
+        //    Powershell.ExecuteShellCmd("ssh root@192.168.50.210 systemctl start inmusic-mpc", 100);
+        //}
 
 
 
