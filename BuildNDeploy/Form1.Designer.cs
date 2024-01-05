@@ -135,5 +135,6 @@
         private TextBox logtext;
         private CheckBox runAll;
         private CheckBox reboot;
+        private CheckBox chkMapper;
     }
 }

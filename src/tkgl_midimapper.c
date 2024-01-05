@@ -979,6 +979,7 @@ static void tkgl_init()
     exit(1);
   }
   tklog_info("Product code : %s (%s)\n",DeviceInfoBloc[MPC_Id].productCode,DeviceInfoBloc[MPC_Id].productString);
+  tklog_info("Product code inteks mod \n");
 
 
   // Midi transformation dynamic library

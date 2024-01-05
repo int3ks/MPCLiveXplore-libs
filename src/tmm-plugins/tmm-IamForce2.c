@@ -48,7 +48,7 @@ IAMFORCE PLUGIN -- Force Emulation on MPC
 #include <stdarg.h>
 #include <alsa/asoundlib.h>
 #include <dlfcn.h>
-#include <time.h>
+#include <sys/time.h>
 
 // midimapper defines -----------------------------------------------------------
 
@@ -139,7 +139,9 @@ static bool EraseMode = false;
 //static bool LaunchMode = false;
 
 static bool MixPressed = false;
+static bool PlayPressed = false;
 
+static int CopyButtonstate;
 
 // Shift mode within controller
 static bool CtrlShiftMode = false;
@@ -159,9 +161,14 @@ static int MatrixActive = 0;
 static const uint8_t SoloModeButtonMap [] = { FORCE_BT_MUTE,FORCE_BT_SOLO, FORCE_BT_REC_ARM, FORCE_BT_CLIP_STOP };
 
 // shitfmode for knobs (especially for LIve/One having only 4 knobs)
-static bool KnobShiftMode = false;
-static bool KnobTouch = false;
+static int Current_QLink_LED = MPC_BT_QLINK_SELECT_LED_1;
 
+bool KnobsShiftMode() {
+    if (DeviceInfoBloc[MPC_Id].qlinkKnobsCount == 4 && (Current_QLink_LED == MPC_BT_QLINK_SELECT_LED_2 || Current_QLink_LED == MPC_BT_QLINK_SELECT_LED_4)) {
+        return true;
+    }
+    return false;
+}
 // USed by next seq macro
 static int CurrentSequence = 0;
 static int CurrentMatrixVOffset=0;
@@ -310,6 +317,22 @@ static void MPCRefresCurrentQuadran() {
     int padcolorindex = 0;
    // tklog_debug("start MPCRefresCurrentQuadran\n");
     for (uint8_t padnumber = 0; padnumber < 16; padnumber++) {
+
+        if (MixPressed) {
+            //line 8 and 9
+            padcolorindex = padnumber + 64;
+          //  tklog_debug("MPCRefresCurrentQuadran MIXER padindex: %d padcolorindex: %d\n",padnumber , padcolorindex);
+
+        }else
+
+        if (EraseMode) {
+            //line 8 and 9
+            padcolorindex = padnumber + 72;
+          //  tklog_debug("MPCRefresCurrentQuadran MIXER padindex: %d padcolorindex: %d\n", padnumber, padcolorindex);
+            if (padnumber > 7) { padcolorindex = -1; }
+        }
+        else
+
         if (currentPadMode == FORCE_BT_STEP_SEQ){
             if (MPCPadQuadran == MPC_BANK_C || MPCPadQuadran == MPC_BANK_D || MPCPadQuadran == MPC_BANK_G || MPCPadQuadran == MPC_BANK_H) {
                 padcolorindex = padscolorcacheindexSTPSQ[padnumber];
@@ -348,14 +371,18 @@ static void MPCRefresCurrentQuadran() {
             }
            // tklog_debug("MPCRefresCurrentQuadran LAUNCH padcolorindex: %d\n",padcolorindex);
         }
-        DeviceSetPadColorRGB(MPC_Id, padnumber, Force_PadColorsCache[padcolorindex].c.r, Force_PadColorsCache[padcolorindex].c.g, Force_PadColorsCache[padcolorindex].c.b);
+        if (padcolorindex < 0) {
+            DeviceSetPadColorRGB(MPC_Id, padnumber, 0, 0, 0);
+        }
+        else {
+            DeviceSetPadColorRGB(MPC_Id, padnumber, Force_PadColorsCache[padcolorindex].c.r, Force_PadColorsCache[padcolorindex].c.g, Force_PadColorsCache[padcolorindex].c.b);
+        }
     }
-   // tklog_debug("finish MPCRefresCurrentQuadran\n");
 }
 
 
 
-//#define _LIVE2_
+#define _LIVE2_
 
 static mapping buttonmapping[] = {
     {FORCE_BT_ENCODER , MPC_BT_ENCODER},
@@ -484,10 +511,14 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
       return;
   }
   else if (ev->data.control.param == FORCE_BT_ASSIGN_A) {
+      MPCPadQuadran = MPC_BANK_A;
+
       ev->data.control.param = MPC_BT_BANK_A;
+      ev->data.control.value = MPC_BUTTON_COLOR_RED_HI;
       SendMidiEvent(ev);
 
       ev->data.control.param = MPC_BT_BANK_B;
+      ev->data.control.value = MPC_BUTTON_COLOR_RED_LO;
       SendMidiEvent(ev);
 
       ev->data.control.param = MPC_BT_BANK_D;
@@ -506,13 +537,13 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
       SendMidiEvent(ev);
 
       ev->data.control.param = MPC_BT_BANK_C;
-      ev->data.control.value = MPC_BUTTON_COLOR_RED_HI;
+      
       SendMidiEvent(ev);
 
       ev->data.control.param = MPC_BT_COPY;
       SendMidiEvent(ev);
 
-
+      
       return;
   }
 
@@ -580,10 +611,36 @@ static void SetButtonLED(int button, int MPC_BUTTON_COLOR) {
     SendMidiEvent(&ev2);
 }
 
+static void SetQLinkButtonLed(int Current_QLink_LED) {
+    snd_seq_event_t ev2;
+    snd_seq_ev_clear(&ev2);
+    ev2.type = SND_SEQ_EVENT_CONTROLLER;
+    ev2.data.control.channel = 0;
+    SetMidiEventDestination(&ev2, TO_CTRL_MPC_PRIVATE);
+
+    int qleds[] = { MPC_BT_QLINK_SELECT_LED_1, MPC_BT_QLINK_SELECT_LED_2, MPC_BT_QLINK_SELECT_LED_3, MPC_BT_QLINK_SELECT_LED_4 };
+    ev2.data.control.value = 0;/*led off*/
+    for (int i = 0; i < 4; i++) {
+        ev2.data.control.param = qleds[i];
+        SendMidiEvent(&ev2);
+    }
+
+    ev2.data.control.param = Current_QLink_LED;
+    ev2.data.control.value = 3;/*led on*/
+    SendMidiEvent(&ev2);
+}
 
 
-static int Current_QLink_LED = MPC_BT_QLINK_SELECT_LED_1;
-static int currentcopycolor = 0;
+static double qlinkButtonPress, qlinkButtonRelease;
+
+static double timeInMs() {
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    double usec = (now.tv_sec * 1000000) + now.tv_usec;
+    return usec / 1000.0f;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Set a mapped MPC button  to a Force button
 ///////////////////////////////////////////////////////////////////////////////
@@ -592,18 +649,25 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
     int mapVal = -1 ;
     bool shiftReleaseBefore = false;
     
-    if (ev->data.note.note == MPC_BT_CHANNEL_MIXER) {
+    if (ev->data.note.note == MPC_BT_PLAY) {
+        PlayPressed = (ev->data.note.velocity == 0x7F);
+      //  tklog_debug("PlayPressed %d\n", PlayPressed);
+    }
 
+    if (ev->data.note.note == MPC_BT_CHANNEL_MIXER) {
         MixPressed = (ev->data.note.velocity == 0x7F);
-        tklog_debug("mixPressed %d\n", MixPressed);
+        //tklog_debug("mixPressed %d\n", MixPressed);
+        MPCRefresCurrentQuadran();
     }
 
     if (ev->data.note.note == MPC_BT_ERASE) {
         EraseMode = (ev->data.note.velocity == 0x7F);
+        MPCRefresCurrentQuadran();
     }
 
     if ( ev->data.note.note == MPC_BT_SHIFT ) {
         ShiftMode = ( ev->data.note.velocity == 0x7F ) ;
+       // tklog_debug("ShiftMode %d\n", ShiftMode);
         mapVal = FORCE_BT_SHIFT ;
     }
 
@@ -711,7 +775,6 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
         ev->data.note.note == MPC_BT_STEP_SEQ ||
         ev->data.note.note == MPC_BT_MUTE ||
         ev->data.note.note == MPC_BT_MENU ||
-        //ev->data.note.note == MPC_BT_COPY ||
         ev->data.note.note == MPC_BT_MINUS ||
         ev->data.note.note == MPC_BT_PLUS
         ) {
@@ -731,52 +794,43 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
                 mapVal = map.force;
             }
     }
-    // Knobs touch
+    
+    //QLink Select
     else if (  ev->data.note.note == MPC_BT_QLINK_SELECT ) {
-        if (!ShiftMode) {
-            if (ev->data.note.velocity == 0x7F) {
-                // Set LED
-                snd_seq_event_t ev2;
-                snd_seq_ev_clear(&ev2);
-                ev2.type = SND_SEQ_EVENT_CONTROLLER;
-                ev2.data.control.channel = 0;
-                SetMidiEventDestination(&ev2, TO_CTRL_MPC_PRIVATE);
+      
+        if (ShiftMode) {
+            Current_QLink_LED = MPC_BT_QLINK_SELECT_LED_1;
+            SetQLinkButtonLed(Current_QLink_LED);
+            //SendDeviceKeyPress(FORCE_BT_NOTE);
+            return;
+        }
 
-                //switch previous led off
-                ev2.data.control.param = Current_QLink_LED;
-                ev2.data.control.value = 0;
-                SendMidiEvent(&ev2);
-
+        mapVal = FORCE_BT_KNOBS;
+        if (ev->data.note.velocity == 0x7F) {
+            qlinkButtonPress = timeInMs();
+        }
+        else if (ev->data.note.velocity == 0) {
+            qlinkButtonRelease = timeInMs();
+            double duration = qlinkButtonRelease - qlinkButtonPress;
+            if (duration < 800) {
                 Current_QLink_LED++;
                 if (Current_QLink_LED > MPC_BT_QLINK_SELECT_LED_4) { Current_QLink_LED = MPC_BT_QLINK_SELECT_LED_1; }
-
-                ev2.data.control.param = Current_QLink_LED;
-                ev2.data.control.value = 3;
-
-                KnobShiftMode = (Current_QLink_LED == MPC_BT_QLINK_SELECT_LED_2 || Current_QLink_LED == MPC_BT_QLINK_SELECT_LED_4);
-
-                SendMidiEvent(&ev2);
+                
+                if (Current_QLink_LED == MPC_BT_QLINK_SELECT_LED_2 || Current_QLink_LED == MPC_BT_QLINK_SELECT_LED_4) {
+                    SendDeviceKeyEvent(FORCE_BT_KNOBS, 0);
+                    SendDeviceKeyEvent(FORCE_BT_KNOBS, 0x7F);
+                }
             }
-            if (Current_QLink_LED == MPC_BT_QLINK_SELECT_LED_1 || Current_QLink_LED == MPC_BT_QLINK_SELECT_LED_3) {
-                mapVal = FORCE_BT_KNOBS;
-            }
+            SetQLinkButtonLed(Current_QLink_LED);
         }
-        else {
-            tklog_debug("Knob touch with shift release before");
-            SendDeviceKeyEvent(FORCE_BT_SHIFT, 0);
-            mapVal = FORCE_BT_KNOBS;
-        }
-    }
+        
+       
+    }// Knobs touch
     else if (  ev->data.note.note >= MPC_BT_QLINK1_TOUCH && ev->data.note.note <= MPC_BT_QLINK16_TOUCH ) {
-      mapVal = ev->data.note.note - 1 ;
-      KnobTouch = ( ev->data.note.velocity == 0x7F ) ;
-
-      //tklog_debug("Knob touch = %s  note =   %d \n",KnobTouch ? "True":"False", ev->data.note.note);
-
-      if (  DeviceInfoBloc[MPC_Id].qlinkKnobsCount == 4 ) {
-        if ( KnobShiftMode ) mapVal += 4;
-      }
-      else KnobShiftMode = false;
+        mapVal = ev->data.note.note - 1 ;
+        if (KnobsShiftMode()) {
+            mapVal += 4;
+        }
     }
 
     else if (  ev->data.note.note == MPC_BT_STOP ) {
@@ -784,13 +838,25 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
       mapVal = ( ShiftMode ? FORCE_BT_STOP_ALL : FORCE_BT_STOP);
     }
     else if (  ev->data.note.note == MPC_BT_COPY ) {
-        if (currentPadMode == FORCE_BT_LAUNCH) {
-            SetButtonLED(MPC_BT_COPY, 3);
-            mapVal = FORCE_BT_COPY;
+        if (ev->data.note.velocity == 0x7F) {
+
+//            if (currentPadMode == FORCE_BT_LAUNCH) {
+                if (ShiftMode) {
+                    shiftReleaseBefore = ShiftMode;
+                    mapVal = FORCE_BT_DELETE;
+                    //tklog_debug("copy is delete button\n");
+                }
+                else {
+                    mapVal = FORCE_BT_COPY;
+                }
+  //          }
+  //          else {
+  //              mapVal = FORCE_BT_MUTE;
+  //          }
+            CopyButtonstate = mapVal;
         }
         else {
-            SetButtonLED(MPC_BT_COPY, 1);
-            mapVal = FORCE_BT_MUTE;
+            mapVal = CopyButtonstate;
         }
     }
 
@@ -801,7 +867,11 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
       ev->data.note.note = mapVal;
 
       // Check if we must send a SHIFT RELEASE event to avoid conflict with Force internal shift status
-      if ( shiftReleaseBefore ) SendDeviceKeyEvent(FORCE_BT_SHIFT,false);
+      if (shiftReleaseBefore) { 
+          SendDeviceKeyEvent(FORCE_BT_SHIFT, false); 
+          ShiftMode = 0;
+          //tklog_debug("ShiftMode %d\n", ShiftMode);
+      }
 
       SendMidiEvent(ev );
 
@@ -950,7 +1020,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                 if (ev->data.control.param != 122) {
                     // Save Led status in cache
                     Force_ButtonLedsCache[ev->data.control.param] = ev->data.control.value;
-                    if (ev->data.control.param != 53) tklog_debug("ButtonLedCache param: %d -> value: %d \n", ev->data.control.param, ev->data.control.value);
+                   // if (ev->data.control.param != 53) tklog_debug("ButtonLedCache param: %d -> value: %d \n", ev->data.control.param, ev->data.control.value);
                     // Map with controller leds. Will send a midi msg to the controller
                     ControllerSetMapButtonLed(ev);
 
@@ -985,9 +1055,14 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
             // B0 [10-31] [7F - n] : Qlinks    B0 64 nn : Main encoder
         case SND_SEQ_EVENT_CONTROLLER:
             if (ev->data.control.channel == 0 && ev->data.control.param >= 0x10 && ev->data.control.param <= 0x31) {
-
-                if (KnobShiftMode && DeviceInfoBloc[MPC_Id].qlinkKnobsCount == 4) ev->data.control.param += 4;
-                else if (ev->data.control.param > 0x17) return false;
+                if (KnobsShiftMode()) {
+                    ev->data.control.param += 4;
+                }
+                if (ev->data.control.param > 0x17) { 
+                    tklog_debug("data.control.param > 0x17\n");
+                    return false; 
+                }
+               // tklog_debug("qlinks param %d value %d  shiftmode %d\n", ev->data.control.param, ev->data.control.value, ShiftMode);
             }
 
             break;
@@ -1004,22 +1079,23 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
             // Mpc Pads on channel 9
             if (ev->data.note.channel == 9) {
                 //tklog_debug("PAD track received currentPadMode %d  shiftmode %d\n", currentPadMode, ShiftMode);
-                
-                if (((MatrixActive || currentPadMode == FORCE_BT_LAUNCH) && ShiftMode) || EraseMode || MixPressed) {
+                bool  rowlaunchMode = ((MatrixActive || currentPadMode == FORCE_BT_LAUNCH) && PlayPressed);
+
+                if (rowlaunchMode || EraseMode || MixPressed) {
                 
                     if (ev->type == SND_SEQ_EVENT_NOTEON) {
                         uint8_t track = 0;
-                        if      (EraseMode) { track = mapForceNote(mpcPadToTrack,  ev->data.note.note, 8); }
-                        else if (MixPressed){ track = mapForceNote(mpcPadToMute,   ev->data.note.note, 16); }
-                        else {                track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 8); }
+                        if      (EraseMode)     { track = mapForceNote(mpcPadToTrack,  ev->data.note.note, 8); }
+                        else if (MixPressed)    { track = mapForceNote(mpcPadToMute,   ev->data.note.note, 16); }
+                        else if (rowlaunchMode) { track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 8); }
 
                         if (track > 0) {
                             if (MixPressed) { 
                                 if (upperrow(ev->data.note.note)) {
-                                    SendDeviceKeyPress(FORCE_BT_MUTE);
+                                    SendDeviceKeyPress(FORCE_BT_REC_ARM);
                                 }
                                 else {
-                                    SendDeviceKeyPress(FORCE_BT_REC_ARM);
+                                    SendDeviceKeyPress(FORCE_BT_MUTE);
                                 }
                             }
                             SendDeviceKeyPress(track);
@@ -1038,14 +1114,26 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
 
                 ev->data.note.note = ForcePadNote;
 
+                //padmute mode for Step sequencer
+                if (currentPadMode == FORCE_BT_STEP_SEQ &&
+                    MPCPadQuadran == MPC_BANK_A &&
+                    ShiftMode) {
+                    SendDeviceKeyEvent(FORCE_BT_SHIFT, 0);
+                    SendDeviceKeyEvent(FORCE_BT_MUTE, 0x7F);
+                    SendMidiEvent(ev);
+                    SendDeviceKeyEvent(FORCE_BT_MUTE, 0);
+                    return false;
+                }
+
+
                 // If Shift Mode, simulate Select key
-                if (ShiftMode) {
+             /*   if (ShiftMode) {
                     SendDeviceKeyEvent(FORCE_BT_SELECT, 0x7F);
                     SendMidiEvent(ev);
                     SendDeviceKeyEvent(FORCE_BT_SELECT, 0);
                     return false;
                 }
-
+                */
             }
 
             break;
@@ -1059,7 +1147,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
         // to send specific CC/channel 16 to the  port name = "TKGL_(your controller name)" to trig those commands.
 
     case FROM_MPC_EXTCTRL:
-        //tklog_debug("Midi Event received from MPC EXCTRL\n");
+        tklog_debug("Midi Event received from MPC EXCTRL\n");
         if (ev->type == SND_SEQ_EVENT_CONTROLLER) {
 
             // Is it one of our IAMFORCE macros on midi channel 16 ?

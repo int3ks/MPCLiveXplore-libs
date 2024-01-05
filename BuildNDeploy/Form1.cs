@@ -62,7 +62,7 @@ namespace BuildNDeploy {
                 EnableRaisingEvents = true
             };
             Powershell.Start();
-            Powershell.Exited += (sender, e) => {  Powershell = null; };
+            Powershell.Exited += (sender, e) => { Powershell = null; };
             Powershell.ExecuteShellCmd("Function prompt { \"PS > \" } ; cls", 100);
         }
 
@@ -74,7 +74,7 @@ namespace BuildNDeploy {
             SetForegroundWindow(Powershell.MainWindowHandle);
         }
 
-       
+
         private void StartBash() {
             Powershell.ExecuteBashCmd("Bash");
             if (!gccChecked) {
@@ -99,7 +99,7 @@ namespace BuildNDeploy {
             return;
         }
 
-       
+
 
 
         private void runTestBuild_Click(object sender, EventArgs e) {
@@ -111,42 +111,45 @@ namespace BuildNDeploy {
             src = src.Replace("\r\n", "\n");
 
             Powershell.ExecuteBashCmd($"cd {src}");
+            
             if (runAll.Checked) {
-                 Powershell.ExecuteBashCmd("./wsl2_mk");
+                Powershell.ExecuteBashCmd("./wsl2_mk");
             }
             else {
                 Powershell.ExecuteBashCmd($"./wsl2_mk1 {config["MyPad"]} {config["MyMpc"]} ");
             }
-            
-            
+
+
             Powershell.ExecuteBashCmd($"echo build done '{DateTime.Now}' ");
             Powershell.ExecuteBashCmd("exit");
             return;
         }
 
 
-        int restartcounter = 7;
+        int restartcounter = 0;
         private void copyTestBinToMpc_click(object sender, EventArgs e) {
             EnsurePowershell();
             Powershell.ExecuteShellCmd($"ssh root@{config["mpc_ip"]} systemctl stop inmusic-mpc");
 
             IEnumerable<string> bins;
+
+           
             if (runAll.Checked) {
-                bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*.so");
-    
+                bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "Iamforce*.so");
+
             }
             else {
                 bins = new[] { $"{config["Iamforce2_bin_path_windows"]}\\tmm-IamForce-{config["MyPad"]}-{config["MyMpc"]}.so" };
             }
-            
+
             CopyBins(bins);
             if (restartcounter > 5 || reboot.Checked) {
                 Powershell.ExecuteShellCmd($"ssh root@{config["mpc_ip"]} reboot");
                 restartcounter = 0;
                 reboot.Checked = false;
             }
-            else { 
-                Powershell.ExecuteShellCmd($"ssh root@{config["mpc_ip"]} systemctl start inmusic-mpc"); 
+            else {
+                Powershell.ExecuteShellCmd($"ssh root@{config["mpc_ip"]} systemctl start inmusic-mpc");
             }
             restartcounter++;
             return;
@@ -173,11 +176,11 @@ namespace BuildNDeploy {
                 var remotepath = $"{config["Iamforce2_remote_dir"]}/{filename}";
 
                 var file = new FileInfo(bin);
-                Powershell.ExecuteShellCmd($" scp \"{file}\" root@{config["mpc_ip"]}:{remotepath}",100);
+                Powershell.ExecuteShellCmd($" scp \"{file}\" root@{config["mpc_ip"]}:{remotepath}", 100);
             }
         }
 
-       
+
 
         private void Form1_Load(object sender, EventArgs e) {
             log(@"*** CHECK PATHES IN ..\BuildNDeploy\bin\Debug\net6.0-windows\appsettings.json ***" + "\r\n");
@@ -190,14 +193,14 @@ namespace BuildNDeploy {
             log("*******");
         }
 
-       
+
         public void Bashlog(string cmd) {
             try {
                 logprocess = new Process {
                     StartInfo = new ProcessStartInfo {
                         FileName = "powershell.exe",
                         Arguments = $"ssh root@{config["mpc_ip"]} \"{cmd}\"",
-                      //  RedirectStandardInput = true,
+                        //  RedirectStandardInput = true,
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                         CreateNoWindow = true
@@ -205,7 +208,7 @@ namespace BuildNDeploy {
                     EnableRaisingEvents = true
                 };
                 logprocess.Exited += (sender, e) => Invoke(() => { checkBox1.Checked = false; });
-                logprocess.OutputDataReceived += (sender, e) => { log((e.Data+"").Replace("mpc-live-ii az01-launch-MPC","")); };
+                logprocess.OutputDataReceived += (sender, e) => { log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", "")); };
                 logprocess.Start();
                 logprocess.BeginOutputReadLine();
             } catch (Exception e) {
@@ -213,7 +216,7 @@ namespace BuildNDeploy {
             }
         }
 
-      
+
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e) {
             if (checkBox1.Checked) {
@@ -231,6 +234,6 @@ namespace BuildNDeploy {
             logprocess?.Kill();
         }
 
-
+       
     }
 }
