@@ -1100,7 +1100,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                             }
                             SendDeviceKeyPress(track);
                         }
-
+                        MPCRefresCurrentQuadran();
                     }
                     return false;
                 

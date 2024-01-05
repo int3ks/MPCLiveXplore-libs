@@ -23,12 +23,15 @@
         ///  the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            components = new System.ComponentModel.Container();
             checkBox1 = new CheckBox();
             button2 = new Button();
             button3 = new Button();
             logtext = new TextBox();
             runAll = new CheckBox();
             reboot = new CheckBox();
+            timer1 = new System.Windows.Forms.Timer(components);
+            logtimer = new System.Windows.Forms.Timer(components);
             SuspendLayout();
             // 
             // checkBox1
@@ -108,6 +111,15 @@
             reboot.Text = "reboot";
             reboot.UseVisualStyleBackColor = true;
             // 
+            // timer1
+            // 
+            timer1.Interval = 1000;
+            timer1.Tick += timer1_Tick;
+            // 
+            // logtimer
+            // 
+            logtimer.Tick += logtimer_Tick;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -135,6 +147,8 @@
         private TextBox logtext;
         private CheckBox runAll;
         private CheckBox reboot;
-        private CheckBox chkMapper;
+       
+        private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.Timer logtimer;
     }
 }

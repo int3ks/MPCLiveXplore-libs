@@ -25,6 +25,34 @@ namespace BuildNDeploy {
         static bool gccChecked = false;
         static Process logprocess;
 
+        bool mpconline = false;
+        private void timer1_Tick(object sender, EventArgs e) {
+            timer1.Enabled = false;
+            var ping = new Process {
+                StartInfo = new ProcessStartInfo {
+                    FileName = "ping.exe",
+                    Arguments = $"{config["mpc_ip"]} -n 1",
+                    //  RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                },
+                EnableRaisingEvents = true
+            };
+            ping.Start();
+            ping.WaitForExit();
+            var result = ping.StandardOutput.ReadToEnd();
+            if (result.Contains("Zeit=")) {
+                mpconline = true;
+                Text = "online";
+            }
+            else {
+                mpconline = false;
+                Text = "offline";
+            }
+            timer1.Enabled = true;
+        }
+
         public Form1() {
 
             InitializeComponent();
@@ -32,6 +60,8 @@ namespace BuildNDeploy {
             config = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
+
+            timer1.Enabled = true;
         }
 
         void log(string info) {
@@ -111,7 +141,7 @@ namespace BuildNDeploy {
             src = src.Replace("\r\n", "\n");
 
             Powershell.ExecuteBashCmd($"cd {src}");
-            
+
             if (runAll.Checked) {
                 Powershell.ExecuteBashCmd("./wsl2_mk");
             }
@@ -133,7 +163,7 @@ namespace BuildNDeploy {
 
             IEnumerable<string> bins;
 
-           
+
             if (runAll.Checked) {
                 bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "Iamforce*.so");
 
@@ -194,12 +224,12 @@ namespace BuildNDeploy {
         }
 
 
-        public void Bashlog(string cmd) {
+        public void Bashlog() {
             try {
                 logprocess = new Process {
                     StartInfo = new ProcessStartInfo {
                         FileName = "powershell.exe",
-                        Arguments = $"ssh root@{config["mpc_ip"]} \"{cmd}\"",
+                        Arguments = $"ssh root@{config["mpc_ip"]} \"journalctl -u inmusic-mpc -f\"",
                         //  RedirectStandardInput = true,
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
@@ -207,22 +237,34 @@ namespace BuildNDeploy {
                     },
                     EnableRaisingEvents = true
                 };
-                logprocess.Exited += (sender, e) => Invoke(() => { checkBox1.Checked = false; });
+                logprocess.Exited += (sender, e) => Invoke(() => { /*checkBox1.Checked = false;*/
+                    logprocess.CloseMainWindow();
+                    logprocess?.Kill();
+                    logprocess = null;
+                });
                 logprocess.OutputDataReceived += (sender, e) => { log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", "")); };
                 logprocess.Start();
                 logprocess.BeginOutputReadLine();
             } catch (Exception e) {
-                log($"Command {cmd} failed {e}");
+                log($"Command 'journalctl -u inmusic-mpc -f' failed {e}");
             }
         }
 
-
+        private void logtimer_Tick(object sender, EventArgs e) {
+            if (logprocess == null && checkBox1.Checked && mpconline) {
+                Bashlog();
+            }
+        }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e) {
-            if (checkBox1.Checked) {
-                Bashlog("journalctl -u inmusic-mpc -f");
-            }
-            else {
+
+            logtimer.Enabled = checkBox1.Checked;
+
+
+
+
+            if (!checkBox1.Checked) {
+                
                 logprocess.CloseMainWindow();
                 logprocess?.Kill();
                 logprocess = null;
@@ -234,6 +276,6 @@ namespace BuildNDeploy {
             logprocess?.Kill();
         }
 
-       
+        
     }
 }
