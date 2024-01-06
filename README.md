@@ -72,6 +72,16 @@ or
 etc.  
 then restart and you're done  
 
+## BuildNDeploy
+a little tool to build the plugins on Windows WSL (build Midimapper i.e. does not work because of dependencys for that you have to use the chroot Devenv on MPC)  
+-open the solution in VisualStudio   
+-setup the appsettings.json  
+-start the WinFormsapp
+
+the buildbutton will install the required packages for crosscompile on your WSL and build the plugin  
+if everything is ok, the deploy button will copy your plugin to MPC and restarts the Force (systemctl restart inmusic-mpc)  
+in the mainscreen you see the logout from MPC for debugging ;)  
+have fun  
 
 ## MPCLiveXplore-libs
 Special libraries and code for MPC and Force devices
