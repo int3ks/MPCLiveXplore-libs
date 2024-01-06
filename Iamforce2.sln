@@ -7,6 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BuildNDeploy", "BuildNDeplo
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{18A7FE29-87FE-4B45-8521-72FC4076B0A2}"
 	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
 		src\tkgl_ctrldump.c = src\tkgl_ctrldump.c
 		src\tkgl_logutil.h = src\tkgl_logutil.h
 		src\tkgl_midimapper.c = src\tkgl_midimapper.c
