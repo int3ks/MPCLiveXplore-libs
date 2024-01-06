@@ -56,21 +56,21 @@ Bank H (shift) 4. Bar
 In NOTES mode:
 Pads mapped to 2x8 lines from Bank A-D
 
-**Installation:**
-assuming you have a working Iamfoce installation. 
-copy the binary for your setup (e.g. tmm-IamForce-LPMK3-LIVE2.so) 
-to 
-```/media/sdcard/tkgl_bootstrap_[ProjectData]/modules/mod_iamforce2/tmm-IamForce-LPMK3-LIVE2.so```
-then adjust the file 
-```/media/sdcard/tkgl_bootstrap_[ProjectData]/doer_list```
-accordingly. You change the part 
-```TKGL_DOER="iamforce2@LPMK3.so"``` 
-to 
-```TKGL_DOER="iamforce2@LPMK3-LIVE2.so"```
-or 
-```TKGL_DOER="iamforce2@LPMK3-ONE.so"``` 
-etc. 
-then restart and you're done
+**Installation:**  
+assuming you have a working Iamfoce installation.  
+copy the binary for your setup (e.g. tmm-IamForce-LPMK3-LIVE2.so)  
+to   
+```/media/sdcard/tkgl_bootstrap_[ProjectData]/modules/mod_iamforce2/tmm-IamForce-LPMK3-LIVE2.so```  
+then adjust the file  
+```/media/sdcard/tkgl_bootstrap_[ProjectData]/doer_list```  
+accordingly. You change the part  
+```TKGL_DOER="iamforce2@LPMK3.so"```  
+to  
+```TKGL_DOER="iamforce2@LPMK3-LIVE2.so"``` 
+or   
+```TKGL_DOER="iamforce2@LPMK3-ONE.so"```  
+etc.  
+then restart and you're done  
 
 
 ## MPCLiveXplore-libs
