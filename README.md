@@ -8,7 +8,7 @@
 
 Most Function are as the label on button...
 
-Metronom/Counter long press **TAP+Shift**
+Metronom/Counter long press **TAP+Shift**  
 TimeCorrection long press **TC**
 
 **REC** is rec to clip
