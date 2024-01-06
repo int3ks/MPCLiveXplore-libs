@@ -382,7 +382,7 @@ static void MPCRefresCurrentQuadran() {
 
 
 
-#define _LIVE2_
+//#define _LIVE2_
 
 static mapping buttonmapping[] = {
     {FORCE_BT_ENCODER , MPC_BT_ENCODER},
@@ -1216,7 +1216,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
         // Event from external controller HARDWARE
 
     case FROM_CTRL_EXT:
-        //tklog_debug("Midi Event received from CTRL EXT\n");
+       // tklog_debug("Midi Event received from CTRL EXT\n");
         return ControllerEventReceived(ev);
 
     }

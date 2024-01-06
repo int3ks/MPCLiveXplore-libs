@@ -31,7 +31,7 @@ namespace BuildNDeploy {
             var ping = new Process {
                 StartInfo = new ProcessStartInfo {
                     FileName = "ping.exe",
-                    Arguments = $"{config["mpc_ip"]} -n 1",
+                    Arguments = $"{config["mpc_ip"]} -n 1 -w 30",
                     //  RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     UseShellExecute = false,
@@ -40,16 +40,19 @@ namespace BuildNDeploy {
                 EnableRaisingEvents = true
             };
             ping.Start();
-            ping.WaitForExit();
-            var result = ping.StandardOutput.ReadToEnd();
-            if (result.Contains("Zeit=")) {
-                mpconline = true;
-                Text = "online";
+            if (ping.WaitForExit(50)) {
+                var result = ping.StandardOutput.ReadToEnd();
+                if (result.Contains("Zeit=")) {
+                    mpconline = true;
+                    Text = "online";
+                }
             }
             else {
                 mpconline = false;
                 Text = "offline";
+                ping.Kill();
             }
+            
             timer1.Enabled = true;
         }
 
@@ -238,11 +241,28 @@ namespace BuildNDeploy {
                     EnableRaisingEvents = true
                 };
                 logprocess.Exited += (sender, e) => Invoke(() => { /*checkBox1.Checked = false;*/
-                    logprocess.CloseMainWindow();
+                    logprocess?.CloseMainWindow();
                     logprocess?.Kill();
                     logprocess = null;
                 });
-                logprocess.OutputDataReceived += (sender, e) => { log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", "")); };
+                logprocess.OutputDataReceived += (sender, e) => {
+                    if(e.Data == null) { return; }
+                    if (chkTKGL.Checked) {
+                        if (chkDEBUG.Checked) {
+                            if (e.Data.Contains("DEBUG")) {
+                                log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", ""));
+                                
+                            }
+                            return;
+                        }
+                        if (e.Data.Contains("[tkgl")) {
+                            log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", ""));
+                            
+                        }
+                        return;
+                    }
+                    log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", "")); 
+                };
                 logprocess.Start();
                 logprocess.BeginOutputReadLine();
             } catch (Exception e) {

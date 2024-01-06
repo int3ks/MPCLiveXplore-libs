@@ -32,6 +32,8 @@
             reboot = new CheckBox();
             timer1 = new System.Windows.Forms.Timer(components);
             logtimer = new System.Windows.Forms.Timer(components);
+            chkTKGL = new CheckBox();
+            chkDEBUG = new CheckBox();
             SuspendLayout();
             // 
             // checkBox1
@@ -118,13 +120,40 @@
             // 
             // logtimer
             // 
+            logtimer.Interval = 10;
             logtimer.Tick += logtimer_Tick;
+            // 
+            // chkTKGL
+            // 
+            chkTKGL.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            chkTKGL.AutoSize = true;
+            chkTKGL.Location = new Point(256, 240);
+            chkTKGL.Margin = new Padding(3, 2, 3, 2);
+            chkTKGL.Name = "chkTKGL";
+            chkTKGL.Size = new Size(78, 19);
+            chkTKGL.TabIndex = 15;
+            chkTKGL.Text = "only TKGL";
+            chkTKGL.UseVisualStyleBackColor = true;
+            // 
+            // chkDEBUG
+            // 
+            chkDEBUG.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            chkDEBUG.AutoSize = true;
+            chkDEBUG.Location = new Point(340, 240);
+            chkDEBUG.Margin = new Padding(3, 2, 3, 2);
+            chkDEBUG.Name = "chkDEBUG";
+            chkDEBUG.Size = new Size(89, 19);
+            chkDEBUG.TabIndex = 16;
+            chkDEBUG.Text = "only DEBUG";
+            chkDEBUG.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(916, 269);
+            Controls.Add(chkDEBUG);
+            Controls.Add(chkTKGL);
             Controls.Add(reboot);
             Controls.Add(runAll);
             Controls.Add(logtext);
@@ -150,5 +179,7 @@
        
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.Timer logtimer;
+        private CheckBox chkTKGL;
+        private CheckBox chkDEBUG;
     }
 }
