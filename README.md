@@ -4,43 +4,43 @@
      _|  _| |_|\___| _|\_\_|_|\_\\____|\___|_|  _| _____|\__,_|_.__/ ____/
  
 -----------------------------------------------------------------------------
-## Buttonmapping
+## Buttonmapping (LIVE2)
 
 Most Function are as the label on button...
 
-Metronom/Counter long press TAP+Shift
-TimeCorrection long press TC
+Metronom/Counter long press **TAP+Shift**
+TimeCorrection long press **TC**
 
-REC is rec to clip
-OVERDUB is rec to arrangement
+**REC** is rec to clip
+**OVERDUB** is rec to arrangement
 
-Launcher Mode is PLAY START
+Launcher Mode is **PLAY START**
 
-Arp is NOTE REPEATE
+Arp is **NOTE REPEAT**
 
-MUTE ist ARR/CLIP/GRID
-NEXT SEQ ist Tack/Instrument
+**MUTE** is ARR/CLIP/GRID
+**NEXT** SEQ is Tack/Instrument
 
-Plus button is Octave up (Notes), Drumbank A-H(StepsSeq) or Next Sequence in Launcher Mode
-Minus Button is Octave down(Notes), Drumbank H-A(StepsSeq) or Prev Sequence in Launcher Mode
+**Plus** button is Octave up (Notes), Drumbank A-H(StepsSeq) or Next Sequence in Launcher Mode
+**Minus** Button is Octave down(Notes), Drumbank H-A(StepsSeq) or Prev Sequence in Launcher Mode
 
-Q-Link button switch between 1-4 5-8 9-12 and 13-16 for Knobs
-Long press Q-Link to select Knobs Type
+**Q-Link** button switch between 1-4 5-8 9-12 and 13-16 for Knobs
+Long press **Q-Link** to select Knobs Type
 
-FULL LEVEL is Master key (Switch between Tracks <> Master/SendEffects)
+**FULL LEVEL** is Master key (Switch between Tracks <> Master/SendEffects)
 
-COPY is copy clips in Launcher mode 
-COPY+SHIFT is delete clips in Launcher mode
+**COPY** is copy clips in Launcher mode 
+**COPY+SHIFT** is delete clips in Launcher mode
 
-ERASE button deletes Track i.e. press ERASE+Pad1 deletes Track 1
+**ERASE** button deletes Track i.e. press ERASE+Pad1 deletes Track 1
 
-Holding SHIFT while in StepSeq mode on Bank A is PAD MUTE
+Holding **SHIFT** while in StepSeq mode on Bank A is **PAD MUTE**
 
-Holding MIX down
+Holding **MIX** down
 -Pads 1-8 -> MUTE tracks
 -Pads 9-16 -> ARM Tracks
 
-PADs:
+**PADs:**
 In STEP SEQ mode (runs from step 1 to 16 / bar now):
 (Drum)
 Bank A -> notes
@@ -56,6 +56,21 @@ Bank H (shift) 4. Bar
 In NOTES mode:
 Pads mapped to 2x8 lines from Bank A-D
 
+**Installation:**
+assuming you have a working Iamfoce installation. 
+copy the binary for your setup (e.g. tmm-IamForce-LPMK3-LIVE2.so) 
+to 
+```/media/sdcard/tkgl_bootstrap_[ProjectData]/modules/mod_iamforce2/tmm-IamForce-LPMK3-LIVE2.so```
+then adjust the file 
+```/media/sdcard/tkgl_bootstrap_[ProjectData]/doer_list```
+accordingly. You change the part 
+```TKGL_DOER="iamforce2@LPMK3.so"``` 
+to 
+```TKGL_DOER="iamforce2@LPMK3-LIVE2.so"```
+or 
+```TKGL_DOER="iamforce2@LPMK3-ONE.so"``` 
+etc. 
+then restart and you're done
 
 
 ## MPCLiveXplore-libs
