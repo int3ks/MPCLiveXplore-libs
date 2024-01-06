@@ -402,6 +402,9 @@ static mapping buttonmapping[] = {
 #endif
 #ifdef _ONE_
      { FORCE_BT_CLIP, MPC_BT_TRACK_MUTE },
+     { FORCE_BT_NAVIGATE, MPC_BT_PROG_EDIT, FORCE_BT_CLIP },
+     { FORCE_BT_MATRIX, MPC_BT_SAMPLER,0,1,FORCE_BT_NAVIGATE},
+     { FORCE_BT_CLIP, MPC_BT_SAMPLE_EDIT },
 #endif
 
 #if defined _LIVE2_ || _ONE_
@@ -648,6 +651,7 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
 
     int mapVal = -1 ;
     bool shiftReleaseBefore = false;
+    mapping map;
     
     if (ev->data.note.note == MPC_BT_PLAY) {
         PlayPressed = (ev->data.note.velocity == 0x7F);
@@ -754,31 +758,9 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
         }
         return;
     }
-
-
-    else if (
-        ev->data.note.note == MPC_BT_ENCODER ||
-        ev->data.note.note == MPC_BT_PLAY ||
-        ev->data.note.note == MPC_BT_REC ||
-        ev->data.note.note == MPC_BT_MAIN ||
-        ev->data.note.note == MPC_BT_PLAY_START ||
-        ev->data.note.note == MPC_BT_NOTE_REPEAT ||
-        ev->data.note.note == MPC_BT_CHANNEL_MIXER ||
-        ev->data.note.note == MPC_BT_NEXT_SEQ ||
-        ev->data.note.note == MPC_BT_TC ||
-        ev->data.note.note == MPC_BT_16_LEVEL ||
-        ev->data.note.note == MPC_BT_ERASE ||
-        ev->data.note.note == MPC_BT_TAP_TEMPO ||
-        ev->data.note.note == MPC_BT_UNDO ||
-        ev->data.note.note == MPC_BT_OVERDUB ||
-        ev->data.note.note == MPC_BT_FULL_LEVEL ||
-        ev->data.note.note == MPC_BT_STEP_SEQ ||
-        ev->data.note.note == MPC_BT_MUTE ||
-        ev->data.note.note == MPC_BT_MENU ||
-        ev->data.note.note == MPC_BT_MINUS ||
-        ev->data.note.note == MPC_BT_PLUS
-        ) {
-            mapping map = getForceMappingValue(ev->data.note.note);
+   
+    //button mapped
+    else if ((map = getForceMappingValue(ev->data.note.note)).force>=0 ) {
             if (!ShiftMode && map.shift > 0 && ev->data.note.velocity == 0x7F) {
                 SendDeviceKeyEvent(FORCE_BT_SHIFT, 0x7F);
                 SendDeviceKeyPress(map.shift);
@@ -1114,6 +1096,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
 
                 ev->data.note.note = ForcePadNote;
 
+               
                 //padmute mode for Step sequencer
                 if (currentPadMode == FORCE_BT_STEP_SEQ &&
                     MPCPadQuadran == MPC_BANK_A &&
