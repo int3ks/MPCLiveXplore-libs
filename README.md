@@ -72,6 +72,14 @@ or
 etc.  
 then restart and you're done  
 
+## For MPC One
+**Trackmute** is Pad Mixer  
+**Sampler** is Matrix  
+**SampleEdit** is Arr/Clip  
+**ProgEdit** is Prog/Trackedit  
+**Browse** is Browse/Load  
+
+
 ## BuildNDeploy
 a little tool to build the plugins on Windows WSL (build Midimapper DOES NOT WORK because of dependencys for that you have to use the chroot Devenv from TheKikGen on MPC)  
 -open the solution in VisualStudio   
