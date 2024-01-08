@@ -401,10 +401,12 @@ static mapping buttonmapping[] = {
      {FORCE_BT_CLIP, MPC_BT_MUTE},
 #endif
 #ifdef _ONE_
-     { FORCE_BT_CLIP, MPC_BT_TRACK_MUTE },
+     { FORCE_BT_MIXER, MPC_BT_TRACK_MUTE, FORCE_BT_MIXER },
      { FORCE_BT_NAVIGATE, MPC_BT_PROG_EDIT, FORCE_BT_CLIP },
      { FORCE_BT_MATRIX, MPC_BT_SAMPLER,0,1,FORCE_BT_NAVIGATE},
      { FORCE_BT_CLIP, MPC_BT_SAMPLE_EDIT },
+     { FORCE_BT_LOAD, MPC_BT_BROWSE },
+     
 #endif
 
 #if defined _LIVE2_ || _ONE_
