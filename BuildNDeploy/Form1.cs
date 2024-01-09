@@ -168,7 +168,7 @@ namespace BuildNDeploy {
 
 
             if (runAll.Checked) {
-                bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "Iamforce*.so");
+                bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*Iamforce*.so");
 
             }
             else {

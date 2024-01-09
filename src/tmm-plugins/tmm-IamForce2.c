@@ -133,7 +133,7 @@ static uint8_t Force_ButtonLedsCache[128];
 // SHIFT Holded mode
 // Holding shift will activate the shift mode
 static bool ShiftMode=false;
-
+static bool Metro_is_on = false;
 static bool EraseMode = false;
 
 //static bool LaunchMode = false;
@@ -486,6 +486,9 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
 
   int mapVal = -1 ;
 
+  //if (ev->data.control.param != 53 && ev->data.control.param != 49) {
+  //    tklog_debug("LED %d value is %d \n", ev->data.control.param, ev->data.control.value);
+  //}
   if (ev->data.control.value == 3 &&
       (ev->data.control.param == FORCE_BT_NOTE || ev->data.control.param == FORCE_BT_STEP_SEQ || ev->data.control.param == FORCE_BT_LAUNCH)) {
       tklog_debug("switch padmode to %d\n", ev->data.control.param);
@@ -508,6 +511,13 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
   for (int i = 0; i < size; i++) {
       if (buttonmapping[i].force == ev->data.control.param) {
           ev->data.control.param = buttonmapping[i].mpc;
+          
+          if (buttonmapping[i].mpc == MPC_BT_TAP_TEMPO) {
+              if (Metro_is_on && ev->data.control.value == MPC_BUTTON_COLOR_RED_HI) {
+                  ev->data.control.value = MPC_BUTTON_COLOR_YELLOW_HI;
+              }
+          }
+          
           SendMidiEvent(ev);
           sent = true;
       }
@@ -751,12 +761,10 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
     //long press TC open Timing correction
     else if (ev->data.note.note == MPC_BT_TC) {
         if (ev->data.note.velocity == 0x7F) {
-            SendDeviceKeyEvent(FORCE_BT_SHIFT, 0x7F);
             SendDeviceKeyEvent(FORCE_BT_MUTE_PAD6, 0x7F);
         }
         else {
             SendDeviceKeyEvent(FORCE_BT_MUTE_PAD6, 0);
-            SendDeviceKeyEvent(FORCE_BT_SHIFT, 0);
         }
         return;
     }
@@ -969,7 +977,36 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                     //if (Force_PadColorsCache[padF].c.g == 127) {
                      //   tklog_debug("PAD COLOR padF=%d greenvalue=%d \n", padF,Force_PadColorsCache[padF].c.g);
                     //}
-                    //stklog_debug("PAD COLOR (len %d) (%d) %02X%02X%02X\n",msgLen,padF,Force_PadColorsCache[padF].c.r, Force_PadColorsCache[padF].c.g,Force_PadColorsCache[padF].c.b);
+                    if (ShiftMode && padF == 69 ) {
+                        if (Force_PadColorsCache[padF].c.g == 0x55) {
+                            SetButtonLED(MPC_BT_TC, 4);
+                         //   TCisOn = true;
+                        }
+                        else {
+                            SetButtonLED(MPC_BT_TC, 1);
+                         //   TCisOn = false;
+                        }
+
+                       // tklog_debug("PAD COLOR (len %d) (%d) %02X%02X%02X\n", msgLen, padF, Force_PadColorsCache[padF].c.r, Force_PadColorsCache[padF].c.g, Force_PadColorsCache[padF].c.b);
+                    }
+                    if (ShiftMode && padF == 68) {
+                        if (Force_PadColorsCache[padF].c.g == 0x55) {
+                            Metro_is_on = true;
+                            SetButtonLED(MPC_BT_TAP_TEMPO, 4);
+                          
+                        }
+                        else {
+                            Metro_is_on = false;
+                            SetButtonLED(MPC_BT_TAP_TEMPO, 1);
+                            
+                        }
+
+                       // tklog_debug("PAD COLOR (len %d) (%d) %02X%02X%02X\n", msgLen, padF, Force_PadColorsCache[padF].c.r, Force_PadColorsCache[padF].c.g, Force_PadColorsCache[padF].c.b);
+                    }
+
+
+                    
+
                     padCt = ControllerGetPadIndex(padF - CtrlPadQuadran);
                     if (padCt >= 0) ControllerSetPadColorRGB(padCt, Force_PadColorsCache[padF].c.r, Force_PadColorsCache[padF].c.g, Force_PadColorsCache[padF].c.b);
 
