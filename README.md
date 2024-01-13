@@ -14,19 +14,19 @@ Most Function are as the label on button...
 _Visual feedback (Yellow = ON, Red = off)_  
   
 **TAP**:  
-SHIFT+Tap -> Metronom/Counter On/off  
+**SHIFT+Tap** -> Metronom/Counter On/off  
 _Visual Feedback (Yellow = ON,Red = Off)_  
-Shift+Tap+LongPress -> opens Metronom Menu  
-Tap+Tap+Tap -> detects BPM  
-Tap+LongPress -> opens BPM Menue (close on Release use Data Wheel to change)  
+**Shift+Tap+LongPress** -> opens Metronom Menu  
+**Tap+Tap+Tap** -> detects BPM  
+**Tap+LongPress** -> opens BPM Menue (close on Release use Data Wheel to change)  
   
 
-**REC** is rec to clip
+**REC** is rec to clip  
 **OVERDUB** is rec to arrangement
 
-Launcher Mode is **PLAY START**
+**PLAY START** is Launcher Mode  
 
-Arp is **NOTE REPEAT**
+**NOTE REPEAT** is Arp   
 
 **MUTE** is ARR/CLIP/GRID  
 **NEXT SEQ** is Tack/Instrument  
