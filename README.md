@@ -31,8 +31,8 @@ _Visual Feedback (Yellow = ON,Red = Off)_
 **MUTE** is ARR/CLIP/GRID  
 **NEXT SEQ** is Tack/Instrument  
 
-**Plus** button is Octave up (Notes), Drumbank A-H(StepsSeq) or Next Sequence in Launcher Mode  
-**Minus** Button is Octave down(Notes), Drumbank H-A(StepsSeq) or Prev Sequence in Launcher Mode  
+**PLUS** button is Octave(Notes)/Drumbank(StepSeq) **UP**     
+**MINUS** Button is Octave(Notes)/Drumbank(StepSeq) **DOWN**  
 
 **Q-Link** button switch between 1-4 5-8 9-12 and 13-16 for Knobs
 Long press **Q-Link** to select Knobs Type
