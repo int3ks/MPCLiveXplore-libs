@@ -8,8 +8,18 @@
 
 Most Function are as the label on button...
 
-Metronom/Counter long press **TAP+Shift**  
-TimeCorrection long press **TC**
+**T.C.** (TimeCorrection):   
+**SHIFT+T.C.** -> TC On/Off   
+**SHIFT+T.C.+LongPress** -> opens T.C. Menue  
+++Visual feedback (Yellow = ON, Red = off)++  
+  
+**TAP**:  
+SHIFT+Tap -> Metronom/Counter On/off  
+++Visual Feedback (Yellow = ON,Red = Off)++  
+Shift+Tap+LongPress -> opens Metronom Menu  
+Tap+Tap+Tap -> detects BPM  
+Tap+LongPress -> opens BPM Menue (close on Release use Data Wheel to change)  
+  
 
 **REC** is rec to clip
 **OVERDUB** is rec to arrangement
@@ -36,9 +46,14 @@ Long press **Q-Link** to select Knobs Type
 
 Holding **SHIFT** while in StepSeq mode on Bank A is **PAD MUTE**
 
-Holding **MIX** down
--Pads 1-8 -> MUTE tracks
--Pads 9-16 -> ARM Tracks
+Press and Hold **MIX**:  
+Upper Row of Pads 9-16 is **SOLO**  
+Lower Row of Pads 1-8 is **MUTE**  
+  
+Press and Hold **PLAY START**:  
+Upper Row of Pads 9-16 is **REC ARM**  
+Lower Row of Pads 1-8 is **Launch** Scene 1-8  
+
 
 **PADs:**
 In STEP SEQ mode (runs from step 1 to 16 / bar now):

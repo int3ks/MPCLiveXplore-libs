@@ -1,4 +1,6 @@
-﻿namespace BuildNDeploy {
+﻿using System.Security.Policy;
+
+namespace BuildNDeploy {
     partial class Form1 {
         /// <summary>
         ///  Required designer variable.
@@ -28,19 +30,19 @@
             button2 = new Button();
             button3 = new Button();
             logtext = new TextBox();
-            runAll = new CheckBox();
             reboot = new CheckBox();
             timer1 = new System.Windows.Forms.Timer(components);
             logtimer = new System.Windows.Forms.Timer(components);
             chkTKGL = new CheckBox();
             chkDEBUG = new CheckBox();
+            comboBox1 = new ComboBox();
             SuspendLayout();
             // 
             // checkBox1
             // 
             checkBox1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             checkBox1.AutoSize = true;
-            checkBox1.Location = new Point(10, 240);
+            checkBox1.Location = new Point(10, 500);
             checkBox1.Margin = new Padding(3, 2, 3, 2);
             checkBox1.Name = "checkBox1";
             checkBox1.Size = new Size(240, 19);
@@ -52,7 +54,7 @@
             // button2
             // 
             button2.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            button2.Location = new Point(612, 240);
+            button2.Location = new Point(1033, 500);
             button2.Margin = new Padding(3, 2, 3, 2);
             button2.Name = "button2";
             button2.Size = new Size(143, 25);
@@ -64,7 +66,7 @@
             // button3
             // 
             button3.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            button3.Location = new Point(761, 240);
+            button3.Location = new Point(1182, 500);
             button3.Margin = new Padding(3, 2, 3, 2);
             button3.Name = "button3";
             button3.Size = new Size(143, 25);
@@ -85,27 +87,15 @@
             logtext.Multiline = true;
             logtext.Name = "logtext";
             logtext.ScrollBars = ScrollBars.Vertical;
-            logtext.Size = new Size(915, 234);
+            logtext.Size = new Size(1336, 494);
             logtext.TabIndex = 12;
             logtext.WordWrap = false;
-            // 
-            // runAll
-            // 
-            runAll.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            runAll.AutoSize = true;
-            runAll.Location = new Point(568, 244);
-            runAll.Margin = new Padding(3, 2, 3, 2);
-            runAll.Name = "runAll";
-            runAll.Size = new Size(38, 19);
-            runAll.TabIndex = 13;
-            runAll.Text = "all";
-            runAll.UseVisualStyleBackColor = true;
             // 
             // reboot
             // 
             reboot.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             reboot.AutoSize = true;
-            reboot.Location = new Point(491, 244);
+            reboot.Location = new Point(848, 504);
             reboot.Margin = new Padding(3, 2, 3, 2);
             reboot.Name = "reboot";
             reboot.Size = new Size(61, 19);
@@ -127,7 +117,7 @@
             // 
             chkTKGL.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             chkTKGL.AutoSize = true;
-            chkTKGL.Location = new Point(256, 240);
+            chkTKGL.Location = new Point(256, 500);
             chkTKGL.Margin = new Padding(3, 2, 3, 2);
             chkTKGL.Name = "chkTKGL";
             chkTKGL.Size = new Size(78, 19);
@@ -139,7 +129,7 @@
             // 
             chkDEBUG.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             chkDEBUG.AutoSize = true;
-            chkDEBUG.Location = new Point(340, 240);
+            chkDEBUG.Location = new Point(340, 500);
             chkDEBUG.Margin = new Padding(3, 2, 3, 2);
             chkDEBUG.Name = "chkDEBUG";
             chkDEBUG.Size = new Size(89, 19);
@@ -147,15 +137,27 @@
             chkDEBUG.Text = "only DEBUG";
             chkDEBUG.UseVisualStyleBackColor = true;
             // 
+            // comboBox1
+            // 
+            comboBox1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBox1.FormattingEnabled = true;
+            comboBox1.Items.AddRange(new object[] { "ALL", "LUMI", "LPMK3", "LPMK2", "APCKEY25MK2", "APCMINIMK2", "KIKPADMK3", "LPPROMK3", "LPX", "NONE" });
+            comboBox1.Location = new Point(927, 502);
+            comboBox1.Name = "comboBox1";
+            comboBox1.Size = new Size(98, 23);
+            comboBox1.TabIndex = 17;
+            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(916, 269);
+            ClientSize = new Size(1337, 529);
+            Controls.Add(comboBox1);
             Controls.Add(chkDEBUG);
             Controls.Add(chkTKGL);
             Controls.Add(reboot);
-            Controls.Add(runAll);
             Controls.Add(logtext);
             Controls.Add(button3);
             Controls.Add(button2);
@@ -174,12 +176,12 @@
         private Button button2;
         private Button button3;
         private TextBox logtext;
-        private CheckBox runAll;
         private CheckBox reboot;
        
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.Timer logtimer;
         private CheckBox chkTKGL;
         private CheckBox chkDEBUG;
+        private ComboBox comboBox1;
     }
 }

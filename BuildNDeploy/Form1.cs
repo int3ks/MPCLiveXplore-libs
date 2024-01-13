@@ -52,7 +52,7 @@ namespace BuildNDeploy {
                 Text = "offline";
                 ping.Kill();
             }
-            
+
             timer1.Enabled = true;
         }
 
@@ -65,6 +65,22 @@ namespace BuildNDeploy {
             .Build();
 
             timer1.Enabled = true;
+            comboBox1.SelectedIndex = (int) Properties.Settings.Default["MyPad"];
+        }
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e) {
+            Properties.Settings.Default["MyPad"] = comboBox1.SelectedIndex;
+            Properties.Settings.Default.Save();
+        }
+
+        private void Form1_Load(object sender, EventArgs e) {
+            log(@"*** CHECK PATHES IN ..\BuildNDeploy\bin\Debug\net6.0-windows\appsettings.json ***" + "\r\n");
+            log($"Iamforce2_src_path_wsl = {config["Iamforce2_src_path_wsl"]}");
+            log($"Iamforce2_src_path_windows  = {config["Iamforce2_src_path_windows"]}");
+            log($"Iamforce2_bin_path_windows = {config["Iamforce2_bin_path_windows"]}");
+            log($"Iamforce2_remote_dir = {config["Iamforce2_remote_dir"]}");
+            log($"MyMpc = {config["MyMpc"]}");
+            log($"MyPad = {comboBox1.SelectedItem}");
+            log("*******");
         }
 
         void log(string info) {
@@ -145,16 +161,19 @@ namespace BuildNDeploy {
 
             Powershell.ExecuteBashCmd($"cd {src}");
 
-            if (runAll.Checked) {
+            if (comboBox1.SelectedIndex == 0) {
                 Powershell.ExecuteBashCmd("./wsl2_mk");
             }
             else {
-                Powershell.ExecuteBashCmd($"./wsl2_mk1 {config["MyPad"]} {config["MyMpc"]} ");
+                //Powershell.ExecuteBashCmd($"./wsl2_mk1 {config["MyPad"]} {config["MyMpc"]} ");
+                Powershell.ExecuteBashCmd($"./wsl2_mk1 {comboBox1.SelectedItem} {config["MyMpc"]} ");
             }
+
 
 
             Powershell.ExecuteBashCmd($"echo build done '{DateTime.Now}' ");
             Powershell.ExecuteBashCmd("exit");
+            SetForegroundWindow(this.Handle);
             return;
         }
 
@@ -167,12 +186,13 @@ namespace BuildNDeploy {
             IEnumerable<string> bins;
 
 
-            if (runAll.Checked) {
+            //if (runAll.Checked) {
+            if (comboBox1.SelectedIndex == 0) {
                 bins = Directory.EnumerateFiles(config["Iamforce2_bin_path_windows"], "*Iamforce*.so");
 
             }
             else {
-                bins = new[] { $"{config["Iamforce2_bin_path_windows"]}\\tmm-IamForce-{config["MyPad"]}-{config["MyMpc"]}.so" };
+                bins = new[] { $"{config["Iamforce2_bin_path_windows"]}\\tmm-IamForce-{comboBox1.SelectedItem}-{config["MyMpc"]}.so" };
             }
 
             CopyBins(bins);
@@ -185,6 +205,7 @@ namespace BuildNDeploy {
                 Powershell.ExecuteShellCmd($"ssh root@{config["mpc_ip"]} systemctl start inmusic-mpc");
             }
             restartcounter++;
+            SetForegroundWindow(this.Handle);
             return;
         }
         //private void copyAllBinsToMpc_Click(object sender, EventArgs e) {
@@ -215,16 +236,7 @@ namespace BuildNDeploy {
 
 
 
-        private void Form1_Load(object sender, EventArgs e) {
-            log(@"*** CHECK PATHES IN ..\BuildNDeploy\bin\Debug\net6.0-windows\appsettings.json ***" + "\r\n");
-            log($"Iamforce2_src_path_wsl = {config["Iamforce2_src_path_wsl"]}");
-            log($"Iamforce2_src_path_windows  = {config["Iamforce2_src_path_windows"]}");
-            log($"Iamforce2_bin_path_windows = {config["Iamforce2_bin_path_windows"]}");
-            log($"Iamforce2_remote_dir = {config["Iamforce2_remote_dir"]}");
-            log($"MyMpc = {config["MyMpc"]}");
-            log($"MyPad = {config["MyPad"]}");
-            log("*******");
-        }
+       
 
 
         public void Bashlog() {
@@ -246,22 +258,22 @@ namespace BuildNDeploy {
                     logprocess = null;
                 });
                 logprocess.OutputDataReceived += (sender, e) => {
-                    if(e.Data == null) { return; }
+                    if (e.Data == null) { return; }
                     if (chkTKGL.Checked) {
                         if (chkDEBUG.Checked) {
                             if (e.Data.Contains("DEBUG")) {
                                 log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", ""));
-                                
+
                             }
                             return;
                         }
                         if (e.Data.Contains("[tkgl")) {
                             log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", ""));
-                            
+
                         }
                         return;
                     }
-                    log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", "")); 
+                    log((e.Data + "").Replace("mpc-live-ii az01-launch-MPC", ""));
                 };
                 logprocess.Start();
                 logprocess.BeginOutputReadLine();
@@ -284,7 +296,7 @@ namespace BuildNDeploy {
 
 
             if (!checkBox1.Checked) {
-                
+
                 logprocess.CloseMainWindow();
                 logprocess?.Kill();
                 logprocess = null;

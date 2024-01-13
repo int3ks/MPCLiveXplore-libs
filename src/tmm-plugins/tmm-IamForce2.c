@@ -139,7 +139,7 @@ static bool EraseMode = false;
 //static bool LaunchMode = false;
 
 static bool MixPressed = false;
-static bool PlayPressed = false;
+static bool PlayStartPressed = false;
 
 static int CopyButtonstate;
 
@@ -228,14 +228,19 @@ bool upperrow(int mpckey) {
 }
 
 static mapping mpcPadToMute[] = {
+    //solo
     {FORCE_BT_MUTE_PAD5,49}, {FORCE_BT_MUTE_PAD6,55}, {FORCE_BT_MUTE_PAD7,51}, {FORCE_BT_MUTE_PAD8,53},
     {FORCE_BT_MUTE_PAD1,48}, {FORCE_BT_MUTE_PAD2,47}, {FORCE_BT_MUTE_PAD3,45}, {FORCE_BT_MUTE_PAD4,43},
-
+    //mute
     {FORCE_BT_MUTE_PAD5,40}, {FORCE_BT_MUTE_PAD6,38}, {FORCE_BT_MUTE_PAD7,46}, {FORCE_BT_MUTE_PAD8,44},
     {FORCE_BT_MUTE_PAD1,37}, {FORCE_BT_MUTE_PAD2,36}, {FORCE_BT_MUTE_PAD3,42}, {FORCE_BT_MUTE_PAD4,82}
 };
 
 static mapping mpcPadToLaunch[] = {
+    //recarm
+    {FORCE_BT_MUTE_PAD5,49}, {FORCE_BT_MUTE_PAD6,55}, {FORCE_BT_MUTE_PAD7,51}, {FORCE_BT_MUTE_PAD8,53},
+    {FORCE_BT_MUTE_PAD1,48}, {FORCE_BT_MUTE_PAD2,47}, {FORCE_BT_MUTE_PAD3,45}, {FORCE_BT_MUTE_PAD4,43},
+    //launch
     {FORCE_BT_LAUNCH_5,40}, {FORCE_BT_LAUNCH_6,38}, {FORCE_BT_LAUNCH_7,46}, {FORCE_BT_LAUNCH_8,44},
     {FORCE_BT_LAUNCH_1,37}, {FORCE_BT_LAUNCH_2,36}, {FORCE_BT_LAUNCH_3,42}, {FORCE_BT_LAUNCH_4,82}
 };
@@ -318,7 +323,7 @@ static void MPCRefresCurrentQuadran() {
    // tklog_debug("start MPCRefresCurrentQuadran\n");
     for (uint8_t padnumber = 0; padnumber < 16; padnumber++) {
 
-        if (MixPressed) {
+        if (MixPressed || (PlayStartPressed && padnumber>7)) {
             //line 8 and 9
             padcolorindex = padnumber + 64;
           //  tklog_debug("MPCRefresCurrentQuadran MIXER padindex: %d padcolorindex: %d\n",padnumber , padcolorindex);
@@ -418,7 +423,6 @@ static mapping buttonmapping[] = {
     {FORCE_BT_STEP_SEQ, MPC_BT_STEP_SEQ},
     {FORCE_BT_STOP, MPC_BT_STOP},
     {FORCE_BT_STOP_ALL, MPC_BT_OVERDUB , FORCE_BT_REC},
-    {FORCE_BT_KNOBS, MPC_BT_QLINK_SELECT},
 
 #else
     {FORCE_BT_EDIT, MPC_BT_ERASE},
@@ -557,7 +561,6 @@ static void MPCSetMapButtonLed(snd_seq_event_t *ev) {
 
       ev->data.control.param = MPC_BT_COPY;
       SendMidiEvent(ev);
-
       
       return;
   }
@@ -665,14 +668,14 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
     bool shiftReleaseBefore = false;
     mapping map;
     
-    if (ev->data.note.note == MPC_BT_PLAY) {
-        PlayPressed = (ev->data.note.velocity == 0x7F);
-      //  tklog_debug("PlayPressed %d\n", PlayPressed);
+    //allways  #######################################################################
+    if (ev->data.note.note == MPC_BT_PLAY_START) {
+        PlayStartPressed = (ev->data.note.velocity == 0x7F);
+        MPCRefresCurrentQuadran();
     }
 
     if (ev->data.note.note == MPC_BT_CHANNEL_MIXER) {
         MixPressed = (ev->data.note.velocity == 0x7F);
-        //tklog_debug("mixPressed %d\n", MixPressed);
         MPCRefresCurrentQuadran();
     }
 
@@ -681,9 +684,10 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
         MPCRefresCurrentQuadran();
     }
 
+
+    //else  #######################################################################
     if ( ev->data.note.note == MPC_BT_SHIFT ) {
         ShiftMode = ( ev->data.note.velocity == 0x7F ) ;
-       // tklog_debug("ShiftMode %d\n", ShiftMode);
         mapVal = FORCE_BT_SHIFT ;
     }
 
@@ -721,38 +725,26 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
 
     
     else if ( ev->data.note.note == MPC_BT_PLUS ) {
-        if (currentPadMode == FORCE_BT_LAUNCH) {
-            //plus goes up in screen
-            if (ev->data.note.velocity == 0x7F) { IamForceMacro_NextSeq(-1); }
+        // octave + on PLUS key
+        if (ev->data.note.velocity == 0x7F) {
+            SendDeviceKeyEvent(FORCE_BT_SHIFT, 0x7F);
+            SendDeviceKeyEvent(FORCE_BT_MUTE_PAD8, 0x7F);
         }
         else {
-            // octave + on PLUS key
-            if (ev->data.note.velocity == 0x7F) {
-                SendDeviceKeyEvent(FORCE_BT_SHIFT, 0x7F);
-                SendDeviceKeyEvent(FORCE_BT_MUTE_PAD8, 0x7F);
-            }
-            else {
-                SendDeviceKeyEvent(FORCE_BT_MUTE_PAD8, 0);
-                SendDeviceKeyEvent(FORCE_BT_SHIFT, 0);
-            }
+            SendDeviceKeyEvent(FORCE_BT_MUTE_PAD8, 0);
+            SendDeviceKeyEvent(FORCE_BT_SHIFT, 0);
         }
         return;
     } 
     else if (ev->data.note.note == MPC_BT_MINUS) {
-        if (currentPadMode == FORCE_BT_LAUNCH) {
-            //minus goes down in screen
-            if (ev->data.note.velocity == 0x7F) { IamForceMacro_NextSeq(1); }
+        //octave - on minus key
+        if (ev->data.note.velocity == 0x7F) {
+            SendDeviceKeyEvent(FORCE_BT_SHIFT, 0x7F);
+            SendDeviceKeyEvent(FORCE_BT_MUTE_PAD7, 0x7F);
         }
         else {
-            //octave - on minus key
-            if (ev->data.note.velocity == 0x7F) {
-                SendDeviceKeyEvent(FORCE_BT_SHIFT, 0x7F);
-                SendDeviceKeyEvent(FORCE_BT_MUTE_PAD7, 0x7F);
-            }
-            else {
-                SendDeviceKeyEvent(FORCE_BT_MUTE_PAD7, 0);
-                SendDeviceKeyEvent(FORCE_BT_SHIFT, 0);
-            }
+            SendDeviceKeyEvent(FORCE_BT_MUTE_PAD7, 0);
+            SendDeviceKeyEvent(FORCE_BT_SHIFT, 0);
         }
         return;
     }
@@ -789,11 +781,9 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
     
     //QLink Select
     else if (  ev->data.note.note == MPC_BT_QLINK_SELECT ) {
-      
         if (ShiftMode) {
             Current_QLink_LED = MPC_BT_QLINK_SELECT_LED_1;
             SetQLinkButtonLed(Current_QLink_LED);
-            //SendDeviceKeyPress(FORCE_BT_NOTE);
             return;
         }
 
@@ -804,6 +794,7 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
         else if (ev->data.note.velocity == 0) {
             qlinkButtonRelease = timeInMs();
             double duration = qlinkButtonRelease - qlinkButtonPress;
+           // tklog_debug("duration %f\n", duration);
             if (duration < 800) {
                 Current_QLink_LED++;
                 if (Current_QLink_LED > MPC_BT_QLINK_SELECT_LED_4) { Current_QLink_LED = MPC_BT_QLINK_SELECT_LED_1; }
@@ -831,20 +822,13 @@ static void MPCSetMapButton(snd_seq_event_t *ev) {
     }
     else if (  ev->data.note.note == MPC_BT_COPY ) {
         if (ev->data.note.velocity == 0x7F) {
-
-//            if (currentPadMode == FORCE_BT_LAUNCH) {
-                if (ShiftMode) {
-                    shiftReleaseBefore = ShiftMode;
-                    mapVal = FORCE_BT_DELETE;
-                    //tklog_debug("copy is delete button\n");
-                }
-                else {
-                    mapVal = FORCE_BT_COPY;
-                }
-  //          }
-  //          else {
-  //              mapVal = FORCE_BT_MUTE;
-  //          }
+            if (ShiftMode) {
+                shiftReleaseBefore = ShiftMode;
+                mapVal = FORCE_BT_DELETE;
+            }
+            else {
+                mapVal = FORCE_BT_COPY;
+            }
             CopyButtonstate = mapVal;
         }
         else {
@@ -977,7 +961,7 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                     //if (Force_PadColorsCache[padF].c.g == 127) {
                      //   tklog_debug("PAD COLOR padF=%d greenvalue=%d \n", padF,Force_PadColorsCache[padF].c.g);
                     //}
-                    if (ShiftMode && padF == 69 ) {
+                    if (ShiftMode && padF == 69 && currentPadMode != FORCE_BT_STEP_SEQ) {
                         if (Force_PadColorsCache[padF].c.g == 0x55) {
                             SetButtonLED(MPC_BT_TC, 4);
                          //   TCisOn = true;
@@ -1100,25 +1084,31 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
             // Mpc Pads on channel 9
             if (ev->data.note.channel == 9) {
                 //tklog_debug("PAD track received currentPadMode %d  shiftmode %d\n", currentPadMode, ShiftMode);
-                bool  rowlaunchMode = ((MatrixActive || currentPadMode == FORCE_BT_LAUNCH) && PlayPressed);
 
-                if (rowlaunchMode || EraseMode || MixPressed) {
-                
+                if (PlayStartPressed || EraseMode || MixPressed) {
+                    
                     if (ev->type == SND_SEQ_EVENT_NOTEON) {
+                        //tklog_debug("PAD track received currentPadMode %d  shiftmode %d playstartpressed %d  mpcpad %d\n", currentPadMode, ShiftMode,PlayStartPressed, ev->data.note.note);
                         uint8_t track = 0;
                         if      (EraseMode)     { track = mapForceNote(mpcPadToTrack,  ev->data.note.note, 8); }
                         else if (MixPressed)    { track = mapForceNote(mpcPadToMute,   ev->data.note.note, 16); }
-                        else if (rowlaunchMode) { track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 8); }
+                        else if (PlayStartPressed) { track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 16); }
 
                         if (track > 0) {
                             if (MixPressed) { 
                                 if (upperrow(ev->data.note.note)) {
-                                    SendDeviceKeyPress(FORCE_BT_REC_ARM);
+                                    SendDeviceKeyPress(FORCE_BT_SOLO);
                                 }
                                 else {
                                     SendDeviceKeyPress(FORCE_BT_MUTE);
                                 }
                             }
+                            else if (PlayStartPressed) {
+                                if (upperrow(ev->data.note.note)) {
+                                    SendDeviceKeyPress(FORCE_BT_REC_ARM);
+                                }
+                            }
+
                             SendDeviceKeyPress(track);
                         }
                         MPCRefresCurrentQuadran();
