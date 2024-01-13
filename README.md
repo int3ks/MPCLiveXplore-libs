@@ -11,11 +11,11 @@ Most Function are as the label on button...
 **T.C.** (TimeCorrection):   
 **SHIFT+T.C.** -> TC On/Off   
 **SHIFT+T.C.+LongPress** -> opens T.C. Menue  
-++Visual feedback (Yellow = ON, Red = off)++  
+_Visual feedback (Yellow = ON, Red = off)_  
   
 **TAP**:  
 SHIFT+Tap -> Metronom/Counter On/off  
-++Visual Feedback (Yellow = ON,Red = Off)++  
+_Visual Feedback (Yellow = ON,Red = Off)_  
 Shift+Tap+LongPress -> opens Metronom Menu  
 Tap+Tap+Tap -> detects BPM  
 Tap+LongPress -> opens BPM Menue (close on Release use Data Wheel to change)  
@@ -28,11 +28,11 @@ Launcher Mode is **PLAY START**
 
 Arp is **NOTE REPEAT**
 
-**MUTE** is ARR/CLIP/GRID
-**NEXT** SEQ is Tack/Instrument
+**MUTE** is ARR/CLIP/GRID  
+**NEXT SEQ** is Tack/Instrument  
 
-**Plus** button is Octave up (Notes), Drumbank A-H(StepsSeq) or Next Sequence in Launcher Mode
-**Minus** Button is Octave down(Notes), Drumbank H-A(StepsSeq) or Prev Sequence in Launcher Mode
+**Plus** button is Octave up (Notes), Drumbank A-H(StepsSeq) or Next Sequence in Launcher Mode  
+**Minus** Button is Octave down(Notes), Drumbank H-A(StepsSeq) or Prev Sequence in Launcher Mode  
 
 **Q-Link** button switch between 1-4 5-8 9-12 and 13-16 for Knobs
 Long press **Q-Link** to select Knobs Type
@@ -55,23 +55,23 @@ Upper Row of Pads 9-16 is **REC ARM**
 Lower Row of Pads 1-8 is **Launch** Scene 1-8  
 
 
-**PADs:**
-In STEP SEQ mode (runs from step 1 to 16 / bar now):
-(Drum)
-Bank A -> notes
-Bank B -> velocity
-Bank C -> 1. Bar
-Bank D -> 2. Bar
-(Mono8x8)
-Bank C -> 1. Bar
-Bank D -> 2. Bar
-Bank G (shift) 3. Bar
-Bank H (shift) 4. Bar
-
-In NOTES mode:
-Pads mapped to 2x8 lines from Bank A-D
-
-**Installation:**  
+**PADs:**  
+In STEP SEQ mode (runs from step 1 to 16 / bar now):  
+(Drum)  
+Bank A -> notes  
+Bank B -> velocity  
+Bank C -> 1. Bar  
+Bank D -> 2. Bar  
+(Mono8x8)  
+Bank C -> 1. Bar  
+Bank D -> 2. Bar  
+Bank G (shift) 3. Bar  
+Bank H (shift) 4. Bar  
+  
+In NOTES mode:  
+Pads mapped to 2x8 lines from Bank A-D  
+  
+**Installation:**   
 assuming you have a working Iamfoce installation.  
 copy the binary for your setup (e.g. tmm-IamForce-LPMK3-LIVE2.so)  
 to   
