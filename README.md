@@ -34,7 +34,7 @@ _Visual Feedback (Yellow = ON,Red = Off)_
 **PLUS** button is Octave(Notes)/Drumbank(StepSeq) **UP**     
 **MINUS** Button is Octave(Notes)/Drumbank(StepSeq) **DOWN**  
 
-**Q-Link** button switch between 1-4 5-8 9-12 and 13-16 for Knobs
+**Q-Link** button switch between 1-4, 5-8, 9-12, and 13-16 for Knobs
 Long press **Q-Link** to select Knobs Type
 
 **FULL LEVEL** is Master key (Switch between Tracks <> Master/SendEffects)
