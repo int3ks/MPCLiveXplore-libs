@@ -1117,6 +1117,17 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                 
                 }
 
+                if (currentPadMode == FORCE_BT_LAUNCH && MPCPadQuadran == MPC_BANK_G) {
+                    uint8_t track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 16);
+                    if (track > 0) {
+                        if (!upperrow(ev->data.note.note)) {
+                            SendDeviceKeyPress(track);
+                        }
+                    }
+                }
+
+
+
                 uint8_t ForcePadNote = ev->data.note.note;
                 ForcePadNote = getForcePadIndex(ev->data.note.note);
                 if (ev->data.note.velocity > 0) {
