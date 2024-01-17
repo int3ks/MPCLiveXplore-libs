@@ -1085,17 +1085,19 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
             if (ev->data.note.channel == 9) {
                 //tklog_debug("PAD track received currentPadMode %d  shiftmode %d\n", currentPadMode, ShiftMode);
 
-                if (PlayStartPressed || EraseMode || MixPressed) {
+                bool launchMarco = currentPadMode == FORCE_BT_LAUNCH && MPCPadQuadran == MPC_BANK_G && !upperrow(ev->data.note.note);
+
+                if (PlayStartPressed || EraseMode || MixPressed || launchMarco) {
                     
                     if (ev->type == SND_SEQ_EVENT_NOTEON) {
                         //tklog_debug("PAD track received currentPadMode %d  shiftmode %d playstartpressed %d  mpcpad %d\n", currentPadMode, ShiftMode,PlayStartPressed, ev->data.note.note);
                         uint8_t track = 0;
                         if      (EraseMode)     { track = mapForceNote(mpcPadToTrack,  ev->data.note.note, 8); }
                         else if (MixPressed)    { track = mapForceNote(mpcPadToMute,   ev->data.note.note, 16); }
-                        else if (PlayStartPressed) { track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 16); }
+                        else if (PlayStartPressed || launchMarco) { track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 16); }
 
                         if (track > 0) {
-                            if (MixPressed) { 
+                            if (MixPressed) {
                                 if (upperrow(ev->data.note.note)) {
                                     SendDeviceKeyPress(FORCE_BT_SOLO);
                                 }
@@ -1108,26 +1110,12 @@ bool MidiMapper( uint8_t sender, snd_seq_event_t *ev, uint8_t *buffer, size_t si
                                     SendDeviceKeyPress(FORCE_BT_REC_ARM);
                                 }
                             }
-
                             SendDeviceKeyPress(track);
+                            MPCRefresCurrentQuadran();
                         }
-                        MPCRefresCurrentQuadran();
                     }
                     return false;
-                
                 }
-
-                if (currentPadMode == FORCE_BT_LAUNCH && MPCPadQuadran == MPC_BANK_G) {
-                    uint8_t track = mapForceNote(mpcPadToLaunch, ev->data.note.note, 16);
-                    if (track > 0) {
-                        if (!upperrow(ev->data.note.note)) {
-                            SendDeviceKeyPress(track);
-                            return false;
-                        }
-                    }
-                }
-
-
 
                 uint8_t ForcePadNote = ev->data.note.note;
                 ForcePadNote = getForcePadIndex(ev->data.note.note);
