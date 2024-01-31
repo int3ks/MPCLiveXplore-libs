@@ -73,6 +73,9 @@ Pads mapped to 2x8 lines from Bank A-D
   
 **Installation:**   
 assuming you have a working Iamfoce installation.  
+
+(btw. different than stated in the bootstrap description. an sdcard with exFat works without problems! If you already use an SD card you can simply open the tkgl-bootstrap-sd-2023-12-01.img with 7zip and copy the contents to the SD card ;) )
+
 copy the binary for your setup (e.g. tmm-IamForce-LPMK3-LIVE2.so)  
 to   
 ```/media/sdcard/tkgl_bootstrap_[ProjectData]/modules/mod_iamforce2/tmm-IamForce-LPMK3-LIVE2.so```  
