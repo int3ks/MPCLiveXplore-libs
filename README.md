@@ -81,9 +81,12 @@ then adjust the file
 accordingly. You change the part  
 ```TKGL_DOER="iamforce2@LPMK3"```  
 to  
-```TKGL_DOER="iamforce2@LPMK3-LIVE2"``` 
+```TKGL_DOER="iamforce2@LPMK3-LIVE2"```   
 or   
 ```TKGL_DOER="iamforce2@LPMK3-ONE"```  
+or   
+```TKGL_DOER="iamforce2@NONE-LIVE2"```   
+
 etc.  
 then restart and you're done  
 
