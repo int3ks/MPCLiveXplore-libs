@@ -79,11 +79,11 @@ to
 then adjust the file  
 ```/media/sdcard/tkgl_bootstrap_[ProjectData]/doer_list```  
 accordingly. You change the part  
-```TKGL_DOER="iamforce2@LPMK3.so"```  
+```TKGL_DOER="iamforce2@LPMK3"```  
 to  
-```TKGL_DOER="iamforce2@LPMK3-LIVE2.so"``` 
+```TKGL_DOER="iamforce2@LPMK3-LIVE2"``` 
 or   
-```TKGL_DOER="iamforce2@LPMK3-ONE.so"```  
+```TKGL_DOER="iamforce2@LPMK3-ONE"```  
 etc.  
 then restart and you're done  
 
